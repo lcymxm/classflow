@@ -1,0 +1,46 @@
+{
+  "name": "classflow",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "packageManager": "pnpm@11.28.5",
+  "description": "课序 · 本地优先的大学课表。周/日视图、课程管理、今日提醒、ICS 日历导出与离线 PWA。",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lucide-react": "^1.72.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "5.9.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  },
+  "homepage": "https://lcymxm.github.io/classflow/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lcymxm/classflow.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "timetable",
+    "class-schedule",
+    "student",
+    "pwa",
+    "local-first",
+    "react",
+    "typescript",
+    "vite",
+    "education"
+  ]
+}

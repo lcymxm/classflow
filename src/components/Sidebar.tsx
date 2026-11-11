@@ -1,0 +1,139 @@
+import {
+  BookOpen,
+  LayoutGrid,
+  Moon,
+  Settings2,
+  Sun,
+} from "lucide-react";
+import type { AppPage, Theme } from "../types";
+
+interface SidebarProps {
+  open: boolean;
+  page: AppPage;
+  semesterName: string;
+  week: number;
+  currentWeek: number;
+  totalWeeks: number;
+  courseCount: number;
+  sessionCount: number;
+  isDemo: boolean;
+  theme: Theme;
+  onNavigate: (page: AppPage) => void;
+  onToggleTheme: () => void;
+  onOpenSettings: () => void;
+}
+
+export function LogoMark() {
+  return (
+    <span className="logo-mark" aria-hidden="true">
+      <span className="logo-cell" />
+      <span className="logo-cell logo-cell--accent" />
+      <span className="logo-cell logo-cell--soft" />
+      <span className="logo-cell logo-cell--line" />
+    </span>
+  );
+}
+
+export function Sidebar({
+  open,
+  page,
+  semesterName,
+  week,
+  currentWeek,
+  totalWeeks,
+  courseCount,
+  sessionCount,
+  isDemo,
+  theme,
+  onNavigate,
+  onToggleTheme,
+  onOpenSettings,
+}: SidebarProps) {
+  const progress = Math.min(100, Math.max(0, (currentWeek / Math.max(totalWeeks, 1)) * 100));
+
+  return (
+    <aside className={`sidebar ${open ? "is-open" : ""}`} aria-label="主导航">
+      <div className="brand">
+        <LogoMark />
+        <div className="brand-copy">
+          <span className="brand-name">课序</span>
+          <span className="brand-en">CLASSFLOW</span>
+        </div>
+      </div>
+
+      <section className="term-card" aria-label="当前学期">
+        <div className="term-card-top">
+          <span className="micro-label">CURRENT TERM</span>
+          <button className="term-edit" type="button" onClick={onOpenSettings} aria-label="修改学期设置">
+            <Settings2 size={13} />
+          </button>
+        </div>
+        <div className="term-name-row">
+          <h2>{semesterName}</h2>
+          {isDemo ? <span className="mini-tag">示例</span> : null}
+        </div>
+        <div className="term-progress" aria-hidden="true">
+          <span style={{ width: `${progress}%` }} />
+        </div>
+        <div className="term-meta">
+          <span>第 {currentWeek} 周</span>
+          <span>共 {totalWeeks} 周</span>
+        </div>
+      </section>
+
+      <nav className="main-nav" aria-label="页面">
+        <span className="nav-label">工作台</span>
+        <button
+          className={`nav-item ${page === "timetable" ? "is-active" : ""}`}
+          type="button"
+          onClick={() => onNavigate("timetable")}
+          aria-current={page === "timetable" ? "page" : undefined}
+        >
+          <LayoutGrid size={17} strokeWidth={1.8} />
+          <span>周课表</span>
+          <span className="nav-week">{week}</span>
+        </button>
+        <button
+          className={`nav-item ${page === "courses" ? "is-active" : ""}`}
+          type="button"
+          onClick={() => onNavigate("courses")}
+          aria-current={page === "courses" ? "page" : undefined}
+        >
+          <BookOpen size={17} strokeWidth={1.8} />
+          <span>课程库</span>
+          <span className="nav-count">{courseCount}</span>
+        </button>
+      </nav>
+
+      <div className="sidebar-stats" aria-label="本学期概览">
+        <div>
+          <strong>{courseCount}</strong>
+          <span>门课程</span>
+        </div>
+        <span className="sidebar-stats-divider" />
+        <div>
+          <strong>{sessionCount}</strong>
+          <span>节 / 本周</span>
+        </div>
+      </div>
+
+      <div className="sidebar-bottom">
+        <div className="sidebar-actions">
+          <button className="sidebar-icon-btn" type="button" onClick={onToggleTheme} aria-label="切换主题">
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            <span>{theme === "dark" ? "亮色" : "夜读"}</span>
+          </button>
+          <button className="sidebar-icon-btn" type="button" onClick={onOpenSettings} aria-label="打开设置">
+            <Settings2 size={16} />
+            <span>设置</span>
+          </button>
+        </div>
+        <p className="local-note">
+          <span className="status-dot" aria-hidden="true" />
+          数据只保存在本机
+        </p>
+        <p className="sidebar-signature">把一周，排成喜欢的样子。</p>
+      </div>
+    </aside>
+  );
+}
