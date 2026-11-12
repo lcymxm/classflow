@@ -66,6 +66,7 @@ import type { EditorSeed } from "./components/CourseEditor";
 import { CourseLibrary } from "./components/CourseLibrary";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { DayView } from "./components/DayView";
+import { DesktopPet } from "./components/DesktopPet";
 import { EventEditor } from "./components/EventEditor";
 import type { EventSeed } from "./components/EventEditor";
 import { SettingsModal } from "./components/SettingsModal";
@@ -1015,6 +1016,8 @@ export default function App() {
       ) : null}
 
       <Toast toast={toast} onClose={closeToast} />
+
+      {page === "timetable" ? <DesktopPet /> : null}
 
       {page === "timetable" && week !== currentWeek ? (
         <button className="week-back-fab" type="button" onClick={goToday}>

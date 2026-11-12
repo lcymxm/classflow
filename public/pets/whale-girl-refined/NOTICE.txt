@@ -1,0 +1,46 @@
+Whale Girl (Refined) pet artwork
+================================
+
+Files bundled in this directory:
+  - idle.gif
+  - avatar.png
+  - face.png
+  - idle-frame.png
+
+Source:
+  https://github.com/zhu1090093659/dsh-pet
+  assets/whale-refined/
+  (pet id: whale-girl-refined, display name: 鲸鱼娘（精致版）)
+
+The pet manifest declares: license: MIT.
+The refined variant is derived from the DSH web / DreamSkin whale-girl theme;
+the original theme is credited by dsh-pet to powerdog996 and was distributed
+under the MIT license. The refined atlas is by the dsh-pet/dsh-web contributors.
+
+The character is unofficial fan artwork inspired by the DeepSeek whale mark.
+It is not affiliated with or endorsed by DeepSeek. DeepSeek and the whale mark
+belong to DeepSeek. These assets are included for personal, non-commercial use
+in this free timetable project. Do not present them as official.
+
+MIT License
+-----------
+
+Copyright (c) 2026 dsh-pet / dsh-web contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

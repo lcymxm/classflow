@@ -2,12 +2,12 @@
   <img src="docs/app-icon.png" width="88" alt="课序图标" />
   <h1>课序 · ClassFlow</h1>
   <p><strong>把一学期，排得明明白白。</strong></p>
-  <p>本地优先的大学课表：多套课表、可按日期切换的自命名作息、周次跳转、日程、节假日调休、网格课表、自定义壁纸、DeepSeek 鲸鱼娘主题与 Android 桌面小组件。</p>
+  <p>本地优先的大学课表：多套课表、可按日期切换的自命名作息、周次跳转、日程、节假日调休、网格课表、自定义壁纸、dsh-pet 鲸鱼娘桌宠与 Android 桌面小组件。</p>
 
   <p>
     <a href="https://lcymxm.github.io/classflow/"><strong>在线使用 →</strong></a>
     &nbsp;·&nbsp;
-    <a href="https://github.com/lcymxm/classflow/releases/download/v1.5.0/classflow-1.5.0.apk"><strong>下载 Android APK →</strong></a>
+    <a href="https://github.com/lcymxm/classflow/releases/download/v1.6.0/classflow-1.6.0.apk"><strong>下载 Android APK →</strong></a>
     &nbsp;·&nbsp;
     <a href="#本地运行">本地运行</a>
     &nbsp;·&nbsp;
@@ -33,7 +33,8 @@
 - **多套课表**：主课表、实验课表、考研课表……最多 20 套，独立保存课程、日程、作息和壁纸，随时切换或复制。
 - **两套可命名作息**：没有「标准作息」这类固定名称，两套作息都可以自己起名、逐节改时间；两套的修改会分别保存，不会切换一次就回到默认值。
 - **按日期执行作息**：在设置里添加「从 11 月 1 日起使用作息方案 2」这类规则，之后查看对应周会自动换成那套上下课时间。
-- **DeepSeek 鲸鱼娘主题**：深海蓝界面、鲸鱼气泡与光束背景、玻璃卡片、原创鲸鱼娘小插画；视觉参考了用户提供的 [DSH Market](https://dsh-market.com/) 深海动漫氛围，插画为原创，不复制站内素材。
+- **dsh-pet 鲸鱼娘桌宠**：首页右下角新增可拖动桌宠，使用 [dsh-pet](https://github.com/zhu1090093659/dsh-pet) 的 `whale-girl-refined` 素材；可拖动、点击换气泡、收起。
+- **DeepSeek 鲸鱼娘主题**：深海蓝界面、鲸鱼气泡与光束背景、玻璃卡片；主题图标已换成 dsh-pet 鲸鱼娘头像，视觉参考了 [DSH Market](https://dsh-market.com/) 的深海动漫氛围。
 - **默认周视图**：新打开页面默认是周课表；想按天看再切到日视图。
 - **跳到任意周**：点大周数或顶部周次，弹出周次面板，可直接跳到第几周；不在本周时左下角有「回到本周」快捷按钮。
 - **真正的网格课表**：周视图是一格一格的表格，节次与星期形成清晰网格，课程按节次占据格子。
@@ -43,7 +44,8 @@
 - **日程**：除了课程，还可以添加全天或带时间的个人日程，在周视图、日视图和今日卡片里查看。
 - **课表壁纸**：奶油纸、鼠尾草、晨光、暮色四种预设，也可以上传自己的照片；可调遮罩强度，图片只保存在本机。
 - **预设课表模板**：空白、理工科、文科、医学、考研备考五种起点，创建后仍可自由修改。
-- **三种界面主题**：奶油纸、夜读、DeepSeek 鲸鱼娘。顶部主题按钮也可以循环切换。
+- **三种界面主题**：奶油纸、夜读、DeepSeek 鲸鱼娘。顶部主题按钮也可以循环切换；鲸鱼娘图标来自 dsh-pet。
+- **首页桌宠**：鲸鱼娘会呼吸、漂浮、说小话；可以拖到喜欢的位置，位置会记住。
 - **按日期切换作息**：每周按周日之前最近的规则选择生效作息，同一周内切换整周采用新方案。
 - **Android 桌面小组件**：把今日课程放到手机桌面，点一下直接打开课序。
 - **保留**：课程多时间段、单双周、冲突提示、今日/下一节课、JSON 备份、ICS 日历、打印、PWA 与 Android APK。
@@ -89,7 +91,11 @@
 
 ![按日期执行作息](docs/screenshot-period-rules.png)
 
-> 非官方同人主题，使用原创小插画；与 DeepSeek 官方无隶属关系。
+### 鲸鱼娘桌宠
+
+![鲸鱼娘桌宠](docs/screenshot-pet.png)
+
+> 非官方同人主题，鲸鱼娘素材来自 dsh-pet（MIT）；与 DeepSeek 官方无隶属关系。
 
 ### 跳到任意周
 
@@ -132,11 +138,11 @@
 
 ## Android APK
 
-[**下载 Android 离线版 APK（v1.5.0）→**](https://github.com/lcymxm/classflow/releases/download/v1.5.0/classflow-1.5.0.apk)
+[**下载 Android 离线版 APK（v1.6.0）→**](https://github.com/lcymxm/classflow/releases/download/v1.6.0/classflow-1.6.0.apk)
 
 - 最低系统：Android 7.0（API 24）
 - 包名：`io.github.lcymxm.classflow`
-- 版本：`1.5.0` · release 签名；证书 SHA-256：`DDEB950B349935E3E47194434CED43CD8ECEC52465AE561B1EF17EB7664B0B6B`
+- 版本：`1.6.0` · release 签名；证书 SHA-256：`DDEB950B349935E3E47194434CED43CD8ECEC52465AE561B1EF17EB7664B0B6B`
 - 首次安装需要在系统设置中允许「安装未知应用」。
 - APK 已内置全部页面资源，打开时**不需要访问 GitHub Pages**；数据仍只保存在手机本机。
 - APK 内导出备份 / 日历会打开 Android 系统分享面板，可保存到「文件」或网盘；打印 / PDF 请使用网页版。
@@ -245,12 +251,20 @@ classflow/
 - 作息方案没有固定名称，两套都可以在设置里改名；方案是模板，应用后会复制到当前课表，之后逐节修改只影响当前课表。
 - 页面的默认视图是周视图；切换到日视图后会记住你的选择。
 - 日期作息按每周周日判断生效规则：如果 11 月 1 日（周日）开始新作息，则 10 月 26 日—11 月 1 日这一周显示新作息；周中日期会整周采用新方案。
-- DeepSeek 鲸鱼娘是非官方同人主题，使用项目内原创的简单插画，不包含官方素材；视觉氛围参考 [DSH Market](https://dsh-market.com/)。
+- 鲸鱼娘素材为非官方同人作品，角色与 DeepSeek 相关权利归 DeepSeek；素材来自 dsh-pet 的 `whale-girl-refined`（pet.json 标注 MIT），原始主题来源标注 powerdog996 / DreamSkin。详见 [NOTICE](public/pets/whale-girl-refined/NOTICE.txt)。
+- 视觉氛围参考 [DSH Market](https://dsh-market.com/)；不包含官方素材。
 - 预设课表只会在「课表管理 → 新建课表」时按你的选择生成，不会自动塞进空白课表。
 - Android 小组件只适用于 APK 版本，需要桌面启动器支持。小组件已通过构建检查；当前环境没有 Android 真机，实际桌面效果需要你安装后确认。
 - 同名课程合并只按课程名称识别（忽略大小写和空格）；如果是两个不同班级的同名课，取消合并即可。
 - 课程冲突目前只会提示并并排展示，不会自动调整课程时间。
 - 这是个人课表工具，不包含教务系统登录或自动抓取课表功能。
+
+## 第三方素材
+
+- **dsh-pet · whale-girl-refined**：桌宠动画与主题头像来自 [zhu1090093659/dsh-pet](https://github.com/zhu1090093659/dsh-pet) 的 `assets/whale-refined/`。该 pet.json 标注 MIT；dsh-pet 仓库为 Apache-2.0。
+- 精致版参考 DreamSkin 的「DeepSeek-鲸鱼娘」主题，原始主题作者标注为 `powerdog996`（MIT）。
+- 角色为非官方同人鲸鱼娘；DeepSeek 名称与鲸鱼标志归 DeepSeek，本项目与官方无隶属关系，素材仅用于免费非商业项目。
+- 完整归属、MIT 文本与文件说明：`public/pets/whale-girl-refined/NOTICE.txt`。
 
 ## License
 

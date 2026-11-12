@@ -41,7 +41,7 @@ export function Topbar({
 
       {theme === "whale" ? (
         <span className="topbar-whale" aria-hidden="true">
-          <WhaleMascot size={30} />
+          <WhaleMascot size={30} face />
         </span>
       ) : null}
 

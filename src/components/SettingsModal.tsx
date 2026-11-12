@@ -404,7 +404,7 @@ export function SettingsModal({
                 <ArrowUpRight size={15} />
                 GitHub
               </a>
-              <span>课序 v1.5.0</span>
+              <span>课序 v1.6.0</span>
             </div>
           </nav>
 
@@ -461,11 +461,11 @@ export function SettingsModal({
                       aria-pressed={theme === "whale"}
                     >
                       <span className="theme-swatch theme-swatch--whale">
-                        <WhaleMascot size={34} />
+                        <WhaleMascot size={34} face />
                       </span>
                       <span className="theme-choice-copy">
                         <strong>DeepSeek 鲸鱼娘</strong>
-                        <small>深海蓝 · 非官方同人</small>
+                        <small>深海蓝 · dsh-pet 素材 · 非官方</small>
                       </span>
                       <Waves size={14} className="theme-choice-wave" />
                     </button>

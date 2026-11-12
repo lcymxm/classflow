@@ -5361,6 +5361,166 @@ input[type="date"].field-input {
 
 
 
+
+/* Desktop pet from the dsh-pet whale-girl asset set */
+.desktop-pet {
+  position: fixed;
+  right: 24px;
+  bottom: 26px;
+  z-index: 18;
+  display: flex;
+  width: 96px;
+  height: 112px;
+  align-items: flex-end;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+
+.desktop-pet:focus-visible {
+  border-radius: 16px;
+  box-shadow: 0 0 0 2px var(--coral);
+}
+
+.desktop-pet.is-dragging {
+  cursor: grabbing;
+}
+
+.desktop-pet-image {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 96px;
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 12px rgba(0, 6, 16, 0.3));
+  animation: pet-float 3.8s ease-in-out infinite;
+}
+
+.desktop-pet-shadow {
+  position: absolute;
+  bottom: 4px;
+  left: 18px;
+  width: 60px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0, 8, 18, 0.34);
+  filter: blur(5px);
+  pointer-events: none;
+}
+
+.desktop-pet.is-dragging .desktop-pet-image {
+  animation: none;
+}
+
+.desktop-pet-bubble {
+  position: absolute;
+  right: 2px;
+  bottom: calc(100% + 4px);
+  z-index: 2;
+  width: 156px;
+  padding: 7px 9px;
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--coral) 30%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: 0 8px 26px rgba(0, 5, 15, 0.26);
+  font-size: 8.5px;
+  line-height: 1.5;
+  text-align: left;
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+  animation: pet-bubble-in 180ms ease-out;
+}
+
+.desktop-pet-bubble::after {
+  position: absolute;
+  right: 18px;
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  content: "";
+  border-right: 1px solid color-mix(in srgb, var(--coral) 30%, var(--line));
+  border-bottom: 1px solid color-mix(in srgb, var(--coral) 30%, var(--line));
+  background: var(--surface);
+  transform: rotate(45deg);
+}
+
+.desktop-pet-close {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  z-index: 3;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  opacity: 0;
+  transition: opacity 140ms ease, color 140ms ease;
+}
+
+.desktop-pet:hover .desktop-pet-close,
+.desktop-pet:focus-within .desktop-pet-close {
+  opacity: 1;
+}
+
+.desktop-pet-close:hover {
+  color: var(--coral);
+}
+
+@keyframes pet-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes pet-bubble-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 760px) {
+  .desktop-pet {
+    right: 14px;
+    bottom: 94px;
+    width: 84px;
+    height: 98px;
+  }
+
+  .desktop-pet-image {
+    width: 84px;
+  }
+
+  .desktop-pet-shadow {
+    left: 16px;
+    width: 52px;
+  }
+
+  .desktop-pet-bubble {
+    right: 0;
+    width: 146px;
+    font-size: 8px;
+  }
+
+  .desktop-pet-close {
+    opacity: 0.82;
+    top: 0;
+    right: -1px;
+  }
+}
+
+@media print {
+  .desktop-pet {
+    display: none !important;
+  }
+}
+
 /* Whale theme atmosphere, inspired by the DSH Market visual mood. */
 html[data-theme="whale"] body {
   background-image:
@@ -5851,6 +6011,7 @@ html[data-theme="whale"] .week-chip.is-selected {
 .whale-mascot {
   display: block;
   flex: 0 0 auto;
+  object-fit: contain;
 }
 
 .whale-note {
