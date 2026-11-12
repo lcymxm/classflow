@@ -4349,6 +4349,28 @@ input[type="date"].field-input {
   }
 }
 
+@supports (padding: env(safe-area-inset-top)) {
+  .topbar {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .sidebar {
+    padding-top: calc(26px + env(safe-area-inset-top));
+  }
+
+  .main {
+    padding-bottom: calc(34px + env(safe-area-inset-bottom));
+  }
+
+  .modal-head {
+    padding-top: calc(22px + env(safe-area-inset-top));
+  }
+
+  .modal-foot {
+    padding-bottom: calc(13px + env(safe-area-inset-bottom));
+  }
+}
+
 /* --------------------------------------------------------------------------
    Print
    -------------------------------------------------------------------------- */

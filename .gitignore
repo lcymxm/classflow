@@ -8,3 +8,4 @@ dist-ssr
 .idea
 *.log
 coverage
+dist-android

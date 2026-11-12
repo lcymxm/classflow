@@ -26,6 +26,7 @@ import {
   saveSchedule,
 } from "./lib/storage";
 import { downloadScheduleIcs, downloadScheduleJson, readScheduleFile } from "./lib/transfer";
+import { isNativeApp } from "./lib/nativeFile";
 import { CourseDetail } from "./components/CourseDetail";
 import { CourseEditor } from "./components/CourseEditor";
 import type { EditorSeed } from "./components/CourseEditor";
@@ -301,10 +302,7 @@ export default function App() {
     notify("学期设置已更新。");
   };
 
-  const exportJson = () => {
-    const filename = downloadScheduleJson(data);
-    return filename;
-  };
+  const exportJson = () => downloadScheduleJson(data);
 
   const exportIcs = () => downloadScheduleIcs(data);
 
@@ -377,6 +375,7 @@ export default function App() {
   }, [sidebarOpen, page, data.semester.totalWeeks, currentWeek, todayNumber, visibleDays]);
 
   const isDayView = prefs.view === "day";
+  const nativeApp = isNativeApp();
 
   return (
     <div className="app-shell">
@@ -466,15 +465,17 @@ export default function App() {
                       <span className="board-meta">
                         {viewStats.sessionCount} 节 · {viewStats.courseCount} 门
                       </span>
-                      <button
-                        className="icon-button"
-                        type="button"
-                        onClick={printTimetable}
-                        aria-label="打印当前课表"
-                        title="打印当前课表"
-                      >
-                        <Printer size={17} />
-                      </button>
+                      {!nativeApp ? (
+                        <button
+                          className="icon-button"
+                          type="button"
+                          onClick={printTimetable}
+                          aria-label="打印当前课表"
+                          title="打印当前课表"
+                        >
+                          <Printer size={17} />
+                        </button>
+                      ) : null}
                     </div>
                   </div>
 

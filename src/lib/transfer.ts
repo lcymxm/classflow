@@ -2,6 +2,7 @@ import type { ScheduleData } from "../types";
 import { dateKey, getDateForSlot, timeToMinutes } from "./date";
 import { isSlotActiveInWeek } from "./schedule";
 import { normalizeSchedule } from "./storage";
+import { deliverTextFile, type ExportResult, type FileDelivery } from "./nativeFile";
 
 interface ExportEnvelope {
   app: "kexu";
@@ -23,26 +24,14 @@ export function sanitizeFilename(value: string): string {
   return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim() || "课序";
 }
 
-export function downloadText(filename: string, content: string, type: string): void {
-  const blob = new Blob([content], { type });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 3000);
-}
-
-export function downloadScheduleJson(data: ScheduleData): string {
+export async function downloadScheduleJson(data: ScheduleData): Promise<ExportResult> {
   const filename = `课序-${sanitizeFilename(data.semester.name)}-${dateKey(new Date())}.json`;
-  downloadText(
+  const delivery = await deliverTextFile(
     filename,
     JSON.stringify(exportEnvelope(data), null, 2),
     "application/json;charset=utf-8",
   );
-  return filename;
+  return { filename, delivery };
 }
 
 function icsEscape(value: string): string {
@@ -137,11 +126,17 @@ export function buildIcs(data: ScheduleData): { content: string; count: number }
   return { content: `${lines.join("\r\n")}\r\n`, count };
 }
 
-export function downloadScheduleIcs(data: ScheduleData): { count: number; filename: string } {
+export async function downloadScheduleIcs(
+  data: ScheduleData,
+): Promise<ExportResult & { count: number }> {
   const { content, count } = buildIcs(data);
   const filename = `课序-${sanitizeFilename(data.semester.name)}.ics`;
-  downloadText(filename, content, "text/calendar;charset=utf-8");
-  return { count, filename };
+  const delivery: FileDelivery = await deliverTextFile(
+    filename,
+    content,
+    "text/calendar;charset=utf-8",
+  );
+  return { count, filename, delivery };
 }
 
 export async function readScheduleFile(file: File): Promise<{

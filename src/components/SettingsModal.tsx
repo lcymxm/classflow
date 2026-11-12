@@ -28,6 +28,7 @@ import {
   timeToMinutes,
 } from "../lib/date";
 import { getUsedMaxPeriod } from "../lib/schedule";
+import { isNativeApp, type ExportResult } from "../lib/nativeFile";
 
 type SettingsTab = "term" | "periods" | "data";
 
@@ -35,8 +36,8 @@ interface SettingsModalProps {
   data: ScheduleData;
   onClose: () => void;
   onSaveSemester: (semester: Semester) => void;
-  onExportJson: () => string;
-  onExportIcs: () => { count: number; filename: string };
+  onExportJson: () => Promise<ExportResult>;
+  onExportIcs: () => Promise<ExportResult & { count: number }>;
   onImportFile: (file: File) => Promise<ImportResult>;
   onPrint: () => void;
   onResetDemo: () => void;
@@ -53,6 +54,12 @@ const TABS: Array<{ id: SettingsTab; label: string; icon: typeof Database }> = [
   { id: "periods", label: "作息时间", icon: Clock },
   { id: "data", label: "数据与备份", icon: Database },
 ];
+
+function deliveryMessage(delivery: ExportResult["delivery"], filename: string): string {
+  if (delivery === "shared") return "已生成文件，请在系统分享面板里保存到文件或网盘。";
+  if (delivery === "saved") return `已保存到系统文档：${filename}`;
+  return `已导出 ${filename}`;
+}
 
 function usedMaxWeek(data: ScheduleData): number {
   let max = 0;
@@ -81,6 +88,7 @@ export function SettingsModal({
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const native = isNativeApp();
   const maxPeriod = getUsedMaxPeriod(data.courses);
   const maxWeek = usedMaxWeek(data);
   const periodWarning =
@@ -137,6 +145,38 @@ export function SettingsModal({
       name,
       periods: draft.periods.map((period, index) => ({ ...period, index: index + 1 })),
     });
+  };
+
+  const handleExportJson = async () => {
+    setNotice({ tone: "info", message: "正在整理备份…" });
+    try {
+      const result = await onExportJson();
+      setNotice({
+        tone: "success",
+        message: deliveryMessage(result.delivery, result.filename),
+      });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "导出失败，请稍后再试。",
+      });
+    }
+  };
+
+  const handleExportIcs = async () => {
+    setNotice({ tone: "info", message: "正在生成日历…" });
+    try {
+      const result = await onExportIcs();
+      setNotice({
+        tone: "success",
+        message: `${deliveryMessage(result.delivery, result.filename)}　共 ${result.count} 个日程。`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "导出失败，请稍后再试。",
+      });
+    }
   };
 
   const handleImport = async (file: File | undefined) => {
@@ -360,17 +400,14 @@ export function SettingsModal({
                 <div className="settings-pane-head">
                   <p className="eyebrow">YOUR DATA</p>
                   <h3>数据与备份</h3>
-                  <p>课表保存在浏览器的 localStorage 中。换设备前，记得先导出。</p>
+                  <p>课表保存在本机。换设备前，记得先导出一份备份。</p>
                 </div>
 
                 <div className="data-grid">
                   <button
                     className="data-card"
                     type="button"
-                    onClick={() => {
-                      const filename = onExportJson();
-                      setNotice({ tone: "success", message: `已导出 ${filename}` });
-                    }}
+                    onClick={() => { void handleExportJson(); }}
                   >
                     <span className="data-card-icon">
                       <Download size={18} />
@@ -383,13 +420,7 @@ export function SettingsModal({
                   <button
                     className="data-card"
                     type="button"
-                    onClick={() => {
-                      const result = onExportIcs();
-                      setNotice({
-                        tone: "success",
-                        message: `已导出 ${result.count} 个日程到 ${result.filename}`,
-                      });
-                    }}
+                    onClick={() => { void handleExportIcs(); }}
                   >
                     <span className="data-card-icon">
                       <CalendarRange size={18} />
@@ -412,19 +443,17 @@ export function SettingsModal({
                       <small>选择由课序导出的 JSON 文件</small>
                     </span>
                   </button>
-                  <button
-                    className="data-card"
-                    type="button"
-                    onClick={onPrint}
-                  >
-                    <span className="data-card-icon">
-                      <Printer size={18} />
-                    </span>
-                    <span>
-                      <strong>打印当前课表</strong>
-                      <small>也可以选择「另存为 PDF」</small>
-                    </span>
-                  </button>
+                  {!native ? (
+                    <button className="data-card" type="button" onClick={onPrint}>
+                      <span className="data-card-icon">
+                        <Printer size={18} />
+                      </span>
+                      <span>
+                        <strong>打印当前课表</strong>
+                        <small>也可以选择「另存为 PDF」</small>
+                      </span>
+                    </button>
+                  ) : null}
                 </div>
                 <input
                   ref={fileRef}
