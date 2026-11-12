@@ -85,6 +85,82 @@ html[data-theme="dark"] {
   --toast-ink: #17211d;
 }
 
+
+html[data-theme="whale"] {
+  color-scheme: dark;
+  --bg: #071426;
+  --bg-deep: #040c18;
+  --surface: #0d2038;
+  --surface-2: #122a46;
+  --surface-3: #0b1b31;
+  --field: #0a1930;
+  --ink: #edf6ff;
+  --ink-2: #c0d7e9;
+  --muted: #86a2b9;
+  --faint: #5e7a92;
+  --line: #1d3a54;
+  --line-strong: #2d5574;
+  --dot: rgba(125, 205, 255, 0.075);
+  --forest: #06111f;
+  --forest-2: #0d2942;
+  --cream: #edf7ff;
+  --cream-soft: #a9c6d9;
+  --coral: #67d8ff;
+  --coral-deep: #9be9ff;
+  --coral-soft: #0f2c46;
+  --amber: #ffd27a;
+  --amber-soft: #2b2532;
+  --success: #76d7c4;
+  --success-soft: #102f2d;
+  --danger: #ff8194;
+  --danger-soft: #341923;
+  --primary-bg: #5b8cff;
+  --primary-ink: #f8fbff;
+  --shadow-sm: 0 2px 10px rgba(0, 7, 18, 0.22);
+  --shadow-md: 0 18px 52px rgba(0, 7, 18, 0.34), 0 2px 5px rgba(0, 7, 18, 0.2);
+  --shadow-lg: 0 30px 90px rgba(0, 5, 14, 0.62);
+  --toast-bg: #e4f4ff;
+  --toast-ink: #061426;
+}
+
+html[data-theme="whale"] body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 12% 4%, rgba(91, 140, 255, 0.26), transparent 27rem),
+    radial-gradient(circle at 92% 0%, rgba(103, 216, 255, 0.13), transparent 31rem),
+    radial-gradient(circle at 52% 110%, rgba(49, 102, 177, 0.15), transparent 35rem),
+    radial-gradient(var(--dot) 0.8px, transparent 0.8px);
+  background-size: auto, auto, auto, 20px 20px;
+}
+
+html[data-theme="whale"] .sidebar {
+  background:
+    radial-gradient(circle at 12% -4%, rgba(91, 140, 255, 0.34), transparent 20rem),
+    radial-gradient(circle at 100% 105%, rgba(103, 216, 255, 0.18), transparent 20rem),
+    linear-gradient(165deg, #0d2942, #06111f 58%);
+}
+
+html[data-theme="whale"] .sidebar::before {
+  background-image:
+    linear-gradient(rgba(148, 222, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 222, 255, 0.08) 1px, transparent 1px);
+}
+
+html[data-theme="whale"] .view-switch button.is-active {
+  color: var(--cream);
+  background: var(--forest-2);
+}
+
+html[data-theme="whale"] .course-block {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--tone) 15%, transparent), transparent 100%),
+    color-mix(in srgb, var(--tone) 13%, var(--surface));
+}
+
+html[data-theme="whale"] .week-chip.is-selected {
+  color: #061426;
+}
+
 *,
 *::before,
 *::after {
@@ -1168,7 +1244,8 @@ html[data-theme="dark"] .topbar-add kbd {
   box-shadow: 0 1px 4px rgba(40, 37, 25, 0.09);
 }
 
-html[data-theme="dark"] .view-switch button.is-active {
+html[data-theme="dark"] .view-switch button.is-active,
+html[data-theme="whale"] .view-switch button.is-active {
   color: var(--cream);
   background: var(--forest-2);
 }
@@ -1454,7 +1531,8 @@ html[data-theme="dark"] .view-switch button.is-active {
     border-color 150ms ease;
 }
 
-html[data-theme="dark"] .course-block {
+html[data-theme="dark"] .course-block,
+html[data-theme="whale"] .course-block {
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--tone) 15%, transparent), transparent 100%),
     color-mix(in srgb, var(--tone) 13%, var(--surface));
@@ -5433,7 +5511,8 @@ input[type="date"].field-input {
   background: var(--coral);
 }
 
-html[data-theme="dark"] .week-chip.is-selected {
+html[data-theme="dark"] .week-chip.is-selected,
+html[data-theme="whale"] .week-chip.is-selected {
   color: #17211d;
 }
 
@@ -5484,6 +5563,167 @@ html[data-theme="dark"] .week-chip.is-selected {
 
 .template-option.is-selected strong {
   color: var(--coral);
+}
+
+
+/* Theme chooser */
+.theme-picker-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 2px 0 20px;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.theme-picker-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.theme-picker-head .field-hint {
+  margin: 0;
+  text-align: right;
+}
+
+.theme-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.theme-choice {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  text-align: left;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.theme-choice:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.theme-choice.is-active {
+  border-color: color-mix(in srgb, var(--coral) 45%, var(--line));
+  background: color-mix(in srgb, var(--coral) 7%, var(--surface));
+}
+
+.theme-choice-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.theme-choice-copy strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-choice-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-choice-wave {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  color: var(--coral);
+  opacity: 0.7;
+}
+
+.theme-swatch {
+  display: grid;
+  width: 34px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.theme-swatch--light {
+  background: linear-gradient(135deg, #f4f1e8 45%, #dd6749 46% 58%, #fffdf8 59%);
+}
+
+.theme-swatch--dark {
+  background: linear-gradient(135deg, #101613 45%, #e9e3d5 46% 58%, #17231e 59%);
+}
+
+.theme-swatch--whale {
+  overflow: hidden;
+  border-color: #2d5574;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(103, 216, 255, 0.36), transparent 60%),
+    #0a2340;
+}
+
+.theme-swatch--whale .whale-mascot {
+  width: 32px;
+  height: 32px;
+}
+
+.whale-mascot {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.whale-note {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 7px 8px;
+  border: 1px solid rgba(148, 222, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(9, 30, 52, 0.72);
+}
+
+.whale-note .whale-mascot {
+  width: 50px;
+  height: 50px;
+}
+
+.whale-note > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.whale-note strong {
+  color: #eaf7ff;
+  font-family: var(--display);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.whale-note span {
+  color: rgba(185, 218, 238, 0.72);
+  font-size: 7.5px;
+  line-height: 1.5;
 }
 
 /* Week jumping */
@@ -5663,7 +5903,9 @@ html[data-theme="dark"] .week-chip.is-selected {
 }
 
 html[data-theme="dark"] .week-pick.is-selected strong,
-html[data-theme="dark"] .week-pick.is-selected span {
+html[data-theme="dark"] .week-pick.is-selected span,
+html[data-theme="whale"] .week-pick.is-selected strong,
+html[data-theme="whale"] .week-pick.is-selected span {
   color: var(--primary-ink);
 }
 
@@ -6024,6 +6266,20 @@ html[data-theme="dark"] .week-pick.is-selected span {
 
   .template-picker {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .theme-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .theme-picker-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .theme-picker-head .field-hint {
+    text-align: left;
   }
 
   .week-picker-grid--modal {

@@ -12,9 +12,10 @@ import {
   Printer,
   Trash2,
   Upload,
+  Waves,
 } from "lucide-react";
 import type { FormEvent } from "react";
-import type { ImportResult, Period, PeriodProfile, ScheduleData, Semester } from "../types";
+import type { ImportResult, Period, PeriodProfile, ScheduleData, Semester, Theme } from "../types";
 import { Modal } from "./Modal";
 import {
   MAX_PERIODS,
@@ -30,14 +31,20 @@ import {
 } from "../lib/date";
 import { getUsedMaxPeriod, weeksForSlot } from "../lib/schedule";
 import { isNativeApp, type ExportResult } from "../lib/nativeFile";
+import { WhaleMascot } from "./WhaleMascot";
 
 type SettingsTab = "term" | "periods" | "data";
 
 interface SettingsModalProps {
   data: ScheduleData;
+  theme: Theme;
   autoHolidays: boolean;
   onClose: () => void;
-  onSaveSemester: (semester: Semester, periodProfileId: string | null) => void;
+  onSaveSemester: (
+    semester: Semester,
+    periodProfileId: string | null,
+    periodProfiles: PeriodProfile[],
+  ) => void;
   onExportJson: () => Promise<ExportResult>;
   onExportIcs: () => Promise<ExportResult & { count: number }>;
   onImportFile: (file: File) => Promise<ImportResult>;
@@ -45,6 +52,7 @@ interface SettingsModalProps {
   onClearData: () => void;
   onToggleAutoHolidays: (value: boolean) => void;
   onRenameProfile: (id: string, name: string) => void;
+  onChangeTheme: (theme: Theme) => void;
 }
 
 interface Notice {
@@ -78,6 +86,7 @@ function usedMaxWeek(data: ScheduleData): number {
 
 export function SettingsModal({
   data,
+  theme,
   autoHolidays,
   onClose,
   onSaveSemester,
@@ -88,6 +97,7 @@ export function SettingsModal({
   onClearData,
   onToggleAutoHolidays,
   onRenameProfile,
+  onChangeTheme,
 }: SettingsModalProps) {
   const active = data.timetables.find((item) => item.id === data.activeTimetableId) ?? data.timetables[0];
   const [tab, setTab] = useState<SettingsTab>("term");
@@ -96,6 +106,14 @@ export function SettingsModal({
     periods: active.semester.periods.map((period) => ({ ...period })),
   }));
   const [profileId, setProfileId] = useState<string | null>(active.periodProfileId);
+  const [profilePeriods, setProfilePeriods] = useState<Record<string, Period[]>>(() =>
+    Object.fromEntries(
+      data.periodProfiles.map((profile) => [
+        profile.id,
+        profile.periods.map((period) => ({ ...period })),
+      ]),
+    ),
+  );
   const [renamingProfile, setRenamingProfile] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [error, setError] = useState("");
@@ -103,7 +121,11 @@ export function SettingsModal({
   const fileRef = useRef<HTMLInputElement>(null);
   const native = isNativeApp();
   const currentProfile = data.periodProfiles.find((profile) => profile.id === profileId);
-  const maxPeriod = getUsedMaxPeriod(active.courses);
+  const maxPeriodForProfile = (id: string): number => {
+    const related = data.timetables.filter((timetable) => timetable.periodProfileId === id);
+    return getUsedMaxPeriod(related.flatMap((timetable) => timetable.courses));
+  };
+  const maxPeriod = profileId ? maxPeriodForProfile(profileId) : getUsedMaxPeriod(active.courses);
   const maxWeek = usedMaxWeek(data);
   const periodWarning =
     maxPeriod > draft.periods.length
@@ -116,11 +138,11 @@ export function SettingsModal({
 
   const setPeriodCount = (count: number) => {
     setError("");
-    setProfileId(null);
-    setDraft((current) => ({
-      ...current,
-      periods: resizePeriods(current.periods, count),
-    }));
+    const periods = resizePeriods(draft.periods, count).map((period) => ({ ...period }));
+    setDraft((current) => ({ ...current, periods }));
+    if (profileId) {
+      setProfilePeriods((current) => ({ ...current, [profileId]: periods }));
+    }
   };
 
   const startRenameProfile = () => {
@@ -143,28 +165,30 @@ export function SettingsModal({
   };
 
   const applyProfile = (profile: PeriodProfile) => {
-    if (maxPeriod > profile.periods.length) {
-      setError(`已有课程上到第 ${maxPeriod} 节，「${profile.name}」只有 ${profile.periods.length} 节，无法应用。`);
+    const periods = profilePeriods[profile.id] ?? profile.periods;
+    const targetMax = maxPeriodForProfile(profile.id);
+    if (targetMax > periods.length) {
+      setError(`使用「${profile.name}」的课表已上到第 ${targetMax} 节，方案只有 ${periods.length} 节，无法应用。`);
       return;
     }
     setError("");
     setProfileId(profile.id);
     setDraft((current) => ({
       ...current,
-      periods: profile.periods.map((period) => ({ ...period })),
+      periods: periods.map((period) => ({ ...period })),
     }));
-    setNotice({ tone: "info", message: `已载入「${profile.name}」，保存后应用到当前课表。` });
+    setNotice({ tone: "info", message: `正在编辑「${profile.name}」，保存后更新到课表。` });
   };
 
   const updatePeriod = (index: number, patch: Partial<Period>) => {
     setError("");
-    setProfileId(null);
-    setDraft((current) => ({
-      ...current,
-      periods: current.periods.map((period) =>
-        period.index === index ? { ...period, ...patch } : period,
-      ),
-    }));
+    const periods = draft.periods.map((period) =>
+      period.index === index ? { ...period, ...patch } : period,
+    );
+    setDraft((current) => ({ ...current, periods }));
+    if (profileId) {
+      setProfilePeriods((current) => ({ ...current, [profileId]: periods }));
+    }
   };
 
   const handleSubmit = (event: FormEvent) => {
@@ -182,20 +206,45 @@ export function SettingsModal({
       setError(periodWarning);
       return;
     }
-    const invalidPeriod = draft.periods.find(
-      (period) => !period.start || !period.end || timeToMinutes(period.end) <= timeToMinutes(period.start),
+    const profilesForSave: PeriodProfile[] = data.periodProfiles.map((profile) => {
+      const periods = profile.id === profileId ? draft.periods : profilePeriods[profile.id] ?? profile.periods;
+      return {
+        ...profile,
+        periods: periods.map((period, index) => ({ ...period, index: index + 1 })),
+      };
+    });
+
+    const invalidProfile = profilesForSave.find((profile) =>
+      profile.periods.some(
+        (period) => !period.start || !period.end || timeToMinutes(period.end) <= timeToMinutes(period.start),
+      ),
     );
-    if (invalidPeriod) {
-      setError(`第 ${invalidPeriod.index} 节的结束时间需要晚于开始时间。`);
+    if (invalidProfile) {
+      const invalid = invalidProfile.periods.find(
+        (period) => !period.start || !period.end || timeToMinutes(period.end) <= timeToMinutes(period.start),
+      );
+      setError(`「${invalidProfile.name}」第 ${invalid?.index ?? 1} 节的时间不正确。`);
       return;
     }
+
+    for (const profile of profilesForSave) {
+      const max = maxPeriodForProfile(profile.id);
+      if (max > profile.periods.length) {
+        setError(`使用「${profile.name}」的课表上到第 ${max} 节，方案不能少于 ${max} 节。`);
+        return;
+      }
+    }
+
+    const activePeriods = draft.periods.map((period, index) => ({ ...period, index: index + 1 }));
+
     onSaveSemester(
       {
         ...draft,
         name,
-        periods: draft.periods.map((period, index) => ({ ...period, index: index + 1 })),
+        periods: activePeriods,
       },
       profileId,
+      profilesForSave,
     );
   };
 
@@ -288,7 +337,7 @@ export function SettingsModal({
                 <ArrowUpRight size={15} />
                 GitHub
               </a>
-              <span>课序 v1.3.0</span>
+              <span>课序 v1.4.0</span>
             </div>
           </nav>
 
@@ -306,6 +355,54 @@ export function SettingsModal({
                   <p className="eyebrow">TERM</p>
                   <h3>学期与视图</h3>
                   <p>课表里的每一周，都从学期开始的第一个周一算起。</p>
+                </div>
+
+                <div className="theme-picker-block">
+                  <div className="theme-picker-head">
+                    <span className="field-label">界面主题</span>
+                    <small className="field-hint">切换立即生效，不影响课表数据。</small>
+                  </div>
+                  <div className="theme-choice-grid" role="group" aria-label="界面主题">
+                    <button
+                      className={`theme-choice ${theme === "light" ? "is-active" : ""}`}
+                      type="button"
+                      onClick={() => onChangeTheme("light")}
+                      aria-pressed={theme === "light"}
+                    >
+                      <span className="theme-swatch theme-swatch--light" />
+                      <span className="theme-choice-copy">
+                        <strong>奶油纸</strong>
+                        <small>明亮、纸张感</small>
+                      </span>
+                    </button>
+                    <button
+                      className={`theme-choice ${theme === "dark" ? "is-active" : ""}`}
+                      type="button"
+                      onClick={() => onChangeTheme("dark")}
+                      aria-pressed={theme === "dark"}
+                    >
+                      <span className="theme-swatch theme-swatch--dark" />
+                      <span className="theme-choice-copy">
+                        <strong>夜读</strong>
+                        <small>深绿、适合晚上</small>
+                      </span>
+                    </button>
+                    <button
+                      className={`theme-choice theme-choice--whale ${theme === "whale" ? "is-active" : ""}`}
+                      type="button"
+                      onClick={() => onChangeTheme("whale")}
+                      aria-pressed={theme === "whale"}
+                    >
+                      <span className="theme-swatch theme-swatch--whale">
+                        <WhaleMascot size={34} />
+                      </span>
+                      <span className="theme-choice-copy">
+                        <strong>DeepSeek 鲸鱼娘</strong>
+                        <small>深海蓝 · 非官方同人</small>
+                      </span>
+                      <Waves size={14} className="theme-choice-wave" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="form-grid">

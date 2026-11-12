@@ -126,7 +126,7 @@ export interface LaidOutSession extends Session {
   columns: number;
 }
 
-export type Theme = "light" | "dark";
+export type Theme = "light" | "dark" | "whale";
 export type ViewMode = "week" | "day";
 export type AppPage = "timetable" | "courses";
 

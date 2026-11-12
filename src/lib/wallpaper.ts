@@ -48,9 +48,10 @@ function preset(id: WallpaperPreset): WallpaperPresetDefinition {
 
 function overlay(theme: Theme, dim: number, strong = false): string {
   const amount = Math.min(80, Math.max(0, dim)) / 100;
-  if (theme === "dark") {
+  if (theme !== "light") {
     const alpha = strong ? 0.58 + amount * 0.25 : 0.34 + amount * 0.3;
-    return `rgba(16, 22, 19, ${Math.min(0.9, alpha)})`;
+    const base = theme === "whale" ? "5, 17, 31" : "16, 22, 19";
+    return `rgba(${base}, ${Math.min(0.9, alpha)})`;
   }
   const alpha = strong ? 0.55 + amount * 0.35 : 0.16 + amount * 0.35;
   return `rgba(248, 246, 239, ${Math.min(0.82, alpha)})`;

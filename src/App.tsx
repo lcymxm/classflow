@@ -16,6 +16,8 @@ import type {
   ScheduleData,
   ScheduleEvent,
   Semester,
+  PeriodProfile,
+  Theme,
   Timetable as TimetableModel,
   TimetableCreateInput,
 } from "./types";
@@ -258,7 +260,10 @@ export default function App() {
     savePreferences(prefs);
     document.documentElement.dataset.theme = prefs.theme;
     const meta = document.querySelector('meta[name="theme-color"]');
-    meta?.setAttribute("content", prefs.theme === "dark" ? "#101613" : "#f4f1e8");
+    meta?.setAttribute(
+      "content",
+      prefs.theme === "dark" ? "#101613" : prefs.theme === "whale" ? "#071426" : "#f4f1e8",
+    );
   }, [prefs]);
 
   useEffect(() => {
@@ -407,16 +412,44 @@ export default function App() {
     });
   };
 
-  const saveSemester = (nextSemester: Semester, periodProfileId: string | null) => {
-    updateActiveTimetable((current) => ({
+  const saveSemester = (
+    nextSemester: Semester,
+    periodProfileId: string | null,
+    periodProfiles: PeriodProfile[],
+  ) => {
+    const profileMap = new Map(periodProfiles.map((profile) => [profile.id, profile]));
+    const timestamp = new Date().toISOString();
+    setData((current) => ({
       ...current,
-      semester: nextSemester,
-      periodProfileId,
+      periodProfiles,
+      updatedAt: timestamp,
+      timetables: current.timetables.map((timetable) => {
+        if (timetable.id === current.activeTimetableId) {
+          return {
+            ...timetable,
+            semester: nextSemester,
+            periodProfileId,
+            updatedAt: timestamp,
+          };
+        }
+        const profile = timetable.periodProfileId
+          ? profileMap.get(timetable.periodProfileId)
+          : undefined;
+        if (!profile) return timetable;
+        return {
+          ...timetable,
+          semester: {
+            ...timetable.semester,
+            periods: profile.periods.map((period) => ({ ...period })),
+          },
+          updatedAt: timestamp,
+        };
+      }),
     }));
     setWeek(getWeekNumber(nextSemester.startDate, new Date(), nextSemester.totalWeeks));
     setSelectedDay(Math.min(selectedDay, nextSemester.showWeekends ? 7 : 5));
     setSettingsOpen(false);
-    notify("课表设置已更新。");
+    notify("课表与作息方案已更新。");
   };
 
   const switchTimetable = (id: string) => {
@@ -611,10 +644,15 @@ export default function App() {
   };
 
   const toggleTheme = () => {
+    const themes: Theme[] = ["light", "dark", "whale"];
     setPrefs((current) => ({
       ...current,
-      theme: current.theme === "dark" ? "light" : "dark",
+      theme: themes[(themes.indexOf(current.theme) + 1) % themes.length],
     }));
+  };
+
+  const setTheme = (theme: Theme) => {
+    setPrefs((current) => ({ ...current, theme }));
   };
 
   const setAutoHolidays = (value: boolean) => {
@@ -899,6 +937,7 @@ export default function App() {
       {settingsOpen ? (
         <SettingsModal
           data={data}
+          theme={prefs.theme}
           autoHolidays={prefs.autoHolidays}
           onClose={() => setSettingsOpen(false)}
           onSaveSemester={saveSemester}
@@ -909,6 +948,7 @@ export default function App() {
           onClearData={clearAll}
           onToggleAutoHolidays={setAutoHolidays}
           onRenameProfile={renamePeriodProfile}
+          onChangeTheme={setTheme}
         />
       ) : null}
 

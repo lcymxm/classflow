@@ -1,4 +1,4 @@
-import { CalendarPlus, Menu, Moon, Plus, Settings2, Sun } from "lucide-react";
+import { CalendarPlus, Menu, Moon, Plus, Settings2, Sun, Waves } from "lucide-react";
 import type { AppPage, Theme } from "../types";
 
 interface TopbarProps {
@@ -67,8 +67,20 @@ export function Topbar({
           <span className="status-dot" aria-hidden="true" />
           {storageOk ? "已保存到本机" : "保存失败"}
         </span>
-        <button className="icon-button" type="button" onClick={onToggleTheme} aria-label="切换主题">
-          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+        <button
+          className="icon-button"
+          type="button"
+          onClick={onToggleTheme}
+          aria-label="切换主题"
+          title="切换主题"
+        >
+          {theme === "light" ? (
+            <Moon size={18} />
+          ) : theme === "dark" ? (
+            <Waves size={18} />
+          ) : (
+            <Sun size={18} />
+          )}
         </button>
         <button className="icon-button" type="button" onClick={onOpenSettings} aria-label="打开设置">
           <Settings2 size={18} />

@@ -426,7 +426,14 @@ export function loadPreferences(): Preferences {
     const storedView = parsed.view === "day" ? "day" : parsed.view === "week" ? "week" : fallback.view;
     if (!viewMigrated) localStorage.setItem(DEFAULT_VIEW_KEY, "1");
     return {
-      theme: parsed.theme === "dark" ? "dark" : parsed.theme === "light" ? "light" : fallback.theme,
+      theme:
+        parsed.theme === "dark"
+          ? "dark"
+          : parsed.theme === "whale"
+            ? "whale"
+            : parsed.theme === "light"
+              ? "light"
+              : fallback.theme,
       view: viewMigrated ? storedView : "week",
       autoHolidays: bool(parsed.autoHolidays, true),
     };

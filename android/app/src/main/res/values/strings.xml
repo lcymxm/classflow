@@ -5,5 +5,5 @@
     <string name="package_name">io.github.lcymxm.classflow</string>
     <string name="custom_url_scheme">io.github.lcymxm.classflow</string>
     <string name="widget_name">课序 · 今日课程</string>
-    <string name="widget_description">在主屏幕查看今天的课程与下一节课</string>
+    <string name="widget_description">在主屏幕查看今天的课程与时间</string>
 </resources>

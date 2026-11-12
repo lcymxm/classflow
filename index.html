@@ -17,10 +17,18 @@
     <script>
       try {
         var preferences = JSON.parse(localStorage.getItem("kexu:prefs:v1") || "{}");
+        var storedTheme = preferences.theme;
         var theme =
-          preferences.theme ||
-          (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          storedTheme === "dark" || storedTheme === "whale" || storedTheme === "light"
+            ? storedTheme
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
         document.documentElement.dataset.theme = theme;
+        var themeMeta = document.querySelector('meta[name="theme-color"]');
+        if (themeMeta) {
+          themeMeta.setAttribute("content", theme === "dark" ? "#101613" : theme === "whale" ? "#071426" : "#f4f1e8");
+        }
       } catch (error) {
         document.documentElement.dataset.theme = "light";
       }

@@ -5,8 +5,10 @@ import {
   Moon,
   Settings2,
   Sun,
+  Waves,
 } from "lucide-react";
 import type { AppPage, Theme } from "../types";
+import { WhaleMascot } from "./WhaleMascot";
 
 interface SidebarProps {
   open: boolean;
@@ -129,11 +131,33 @@ export function Sidebar({
         </div>
       </div>
 
+      {theme === "whale" ? (
+        <div className="whale-note">
+          <WhaleMascot size={62} />
+          <div>
+            <strong>DeepSeek 鲸鱼娘</strong>
+            <span>深海模式已开启，今天也要好好上课呀。</span>
+          </div>
+        </div>
+      ) : null}
+
       <div className="sidebar-bottom">
         <div className="sidebar-actions">
-          <button className="sidebar-icon-btn" type="button" onClick={onToggleTheme} aria-label="切换主题">
-            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-            <span>{theme === "dark" ? "亮色" : "夜读"}</span>
+          <button
+            className="sidebar-icon-btn"
+            type="button"
+            onClick={onToggleTheme}
+            aria-label="切换主题"
+            title="切换主题"
+          >
+            {theme === "light" ? (
+              <Moon size={16} />
+            ) : theme === "dark" ? (
+              <Waves size={16} />
+            ) : (
+              <Sun size={16} />
+            )}
+            <span>{theme === "light" ? "夜读" : theme === "dark" ? "鲸鱼娘" : "亮色"}</span>
           </button>
           <button className="sidebar-icon-btn" type="button" onClick={onOpenSettings} aria-label="打开设置">
             <Settings2 size={16} />
