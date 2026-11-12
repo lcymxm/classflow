@@ -5,6 +5,8 @@ import {
   CalendarRange,
   Check,
   Clock,
+  Pencil,
+  X,
   Database,
   Download,
   Printer,
@@ -42,6 +44,7 @@ interface SettingsModalProps {
   onPrint: () => void;
   onClearData: () => void;
   onToggleAutoHolidays: (value: boolean) => void;
+  onRenameProfile: (id: string, name: string) => void;
 }
 
 interface Notice {
@@ -84,6 +87,7 @@ export function SettingsModal({
   onPrint,
   onClearData,
   onToggleAutoHolidays,
+  onRenameProfile,
 }: SettingsModalProps) {
   const active = data.timetables.find((item) => item.id === data.activeTimetableId) ?? data.timetables[0];
   const [tab, setTab] = useState<SettingsTab>("term");
@@ -92,10 +96,13 @@ export function SettingsModal({
     periods: active.semester.periods.map((period) => ({ ...period })),
   }));
   const [profileId, setProfileId] = useState<string | null>(active.periodProfileId);
+  const [renamingProfile, setRenamingProfile] = useState(false);
+  const [profileName, setProfileName] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const native = isNativeApp();
+  const currentProfile = data.periodProfiles.find((profile) => profile.id === profileId);
   const maxPeriod = getUsedMaxPeriod(active.courses);
   const maxWeek = usedMaxWeek(data);
   const periodWarning =
@@ -114,6 +121,25 @@ export function SettingsModal({
       ...current,
       periods: resizePeriods(current.periods, count),
     }));
+  };
+
+  const startRenameProfile = () => {
+    if (!currentProfile) return;
+    setProfileName(currentProfile.name);
+    setRenamingProfile(true);
+    setError("");
+  };
+
+  const submitProfileName = () => {
+    if (!currentProfile) return;
+    const name = profileName.trim();
+    if (!name) {
+      setError("作息方案需要一个名字。");
+      return;
+    }
+    onRenameProfile(currentProfile.id, name);
+    setRenamingProfile(false);
+    setError("");
   };
 
   const applyProfile = (profile: PeriodProfile) => {
@@ -262,7 +288,7 @@ export function SettingsModal({
                 <ArrowUpRight size={15} />
                 GitHub
               </a>
-              <span>课序 v1.2.0</span>
+              <span>课序 v1.3.0</span>
             </div>
           </nav>
 
@@ -384,11 +410,54 @@ export function SettingsModal({
                       <span className="field-label">作息方案</span>
                       <small className="field-hint">选择一套现成的时间表，保存后应用到当前课表。</small>
                     </div>
-                    <span className="profile-current">
-                      {profileId
-                        ? data.periodProfiles.find((profile) => profile.id === profileId)?.name ?? "自定义"
-                        : "自定义"}
-                    </span>
+                    {renamingProfile && currentProfile ? (
+                      <div className="profile-rename-row">
+                        <input
+                          className="field-input"
+                          value={profileName}
+                          onChange={(event) => setProfileName(event.target.value)}
+                          maxLength={40}
+                          autoFocus
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              submitProfileName();
+                            }
+                            if (event.key === "Escape") setRenamingProfile(false);
+                          }}
+                        />
+                        <button
+                          className="icon-button"
+                          type="button"
+                          onClick={submitProfileName}
+                          aria-label="保存作息方案名称"
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button
+                          className="icon-button"
+                          type="button"
+                          onClick={() => setRenamingProfile(false)}
+                          aria-label="取消重命名"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="profile-current-group">
+                        <span className="profile-current">{currentProfile?.name ?? "自定义"}</span>
+                        {currentProfile ? (
+                          <button
+                            className="profile-rename"
+                            type="button"
+                            onClick={startRenameProfile}
+                          >
+                            <Pencil size={12} />
+                            改名
+                          </button>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                   <div className="profile-grid">
                     {data.periodProfiles.map((profile) => (

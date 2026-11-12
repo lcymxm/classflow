@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { WeekStats } from "../types";
 import { formatWeekRange } from "../lib/date";
 import { minutesToHoursLabel } from "../lib/transfer";
@@ -13,6 +13,7 @@ interface WeekHeroProps {
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
+  onOpenWeekPicker: () => void;
 }
 
 export function WeekHero({
@@ -25,6 +26,7 @@ export function WeekHero({
   onPrev,
   onNext,
   onToday,
+  onOpenWeekPicker,
 }: WeekHeroProps) {
   const atCurrentWeek = week === currentWeek;
   const isCurrent = atCurrentWeek && termState === "during";
@@ -38,11 +40,20 @@ export function WeekHero({
           <span className="kicker-line" />
           WEEK {String(week).padStart(2, "0")} / {String(totalWeeks).padStart(2, "0")}
         </p>
-        <h1 className="hero-title">
-          <span>第</span>
-          <strong>{week}</strong>
-          <span>周</span>
-        </h1>
+        <button
+          className="hero-week-trigger"
+          type="button"
+          onClick={onOpenWeekPicker}
+          aria-label={`当前第 ${week} 周，点击选择周次`}
+          title="点击选择周次"
+        >
+          <h1 className="hero-title">
+            <span>第</span>
+            <strong>{week}</strong>
+            <span>周</span>
+          </h1>
+          <ChevronDown size={18} />
+        </button>
         <div className="hero-subline">
           <span className="hero-range">{formatWeekRange(dates)}</span>
           {statusLabel ? <span className="hero-status">{statusLabel}</span> : null}
@@ -86,7 +97,7 @@ export function WeekHero({
         <p className="hero-hint">
           <kbd>←</kbd>
           <kbd>→</kbd>
-          切换周次
+          切换周次 · 点周数跳转
         </p>
       </div>
     </section>

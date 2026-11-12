@@ -85,12 +85,12 @@ export function createDefaultPeriodProfiles(): PeriodProfile[] {
   return [
     {
       id: STANDARD_PROFILE_ID,
-      name: "标准作息",
+      name: "作息方案 1",
       periods: createPeriods(12),
     },
     {
       id: SUMMER_PROFILE_ID,
-      name: "夏季作息",
+      name: "作息方案 2",
       periods: createSummerPeriods(),
     },
   ];

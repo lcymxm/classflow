@@ -13,6 +13,7 @@ interface TopbarProps {
   onAddEvent: () => void;
   onOpenSettings: () => void;
   onManageTimetables: () => void;
+  onOpenWeekPicker: () => void;
   onToggleTheme: () => void;
 }
 
@@ -28,6 +29,7 @@ export function Topbar({
   onAddEvent,
   onOpenSettings,
   onManageTimetables,
+  onOpenWeekPicker,
   onToggleTheme,
 }: TopbarProps) {
   return (
@@ -47,7 +49,17 @@ export function Topbar({
         </button>
         <span className="breadcrumb-slash">/</span>
         <span>{page === "timetable" ? "周课表" : "课程库"}</span>
-        {page === "timetable" ? <span className="breadcrumb-week">第 {week} 周</span> : null}
+        {page === "timetable" ? (
+          <button
+            className="breadcrumb-week"
+            type="button"
+            onClick={onOpenWeekPicker}
+            aria-label="选择周次"
+            title="选择周次"
+          >
+            第 {week} 周
+          </button>
+        ) : null}
       </div>
 
       <div className="topbar-actions">

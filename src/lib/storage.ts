@@ -25,6 +25,7 @@ import {
 import {
   DEFAULT_TOTAL_WEEKS,
   STANDARD_PROFILE_ID,
+  SUMMER_PROFILE_ID,
   createDefaultPeriodProfiles,
   createDefaultWallpaper,
   createInitialData,
@@ -35,6 +36,7 @@ import {
 export const DATA_KEY = "kexu:data:v2";
 export const LEGACY_DATA_KEY = "kexu:data:v1";
 export const PREFS_KEY = "kexu:prefs:v1";
+export const DEFAULT_VIEW_KEY = "kexu:prefs:week-default:v1";
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -224,6 +226,8 @@ function normalizeProfiles(value: unknown): PeriodProfile[] {
   const ids = new Set<string>();
   raw.forEach((item, index) => {
     const profile = normalizeProfile(item, index);
+    if (profile.id === STANDARD_PROFILE_ID && profile.name === "标准作息") profile.name = "作息方案 1";
+    if (profile.id === SUMMER_PROFILE_ID && profile.name === "夏季作息") profile.name = "作息方案 2";
     if (ids.has(profile.id)) return;
     ids.add(profile.id);
     profiles.push(profile);
@@ -408,17 +412,22 @@ export function loadPreferences(): Preferences {
       window.matchMedia?.("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light",
-    view:
-      typeof window !== "undefined" && window.innerWidth < 820 ? "day" : "week",
+    view: "week",
     autoHolidays: true,
   };
   try {
     const raw = localStorage.getItem(PREFS_KEY);
-    if (!raw) return fallback;
+    const viewMigrated = localStorage.getItem(DEFAULT_VIEW_KEY) === "1";
+    if (!raw) {
+      localStorage.setItem(DEFAULT_VIEW_KEY, "1");
+      return fallback;
+    }
     const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const storedView = parsed.view === "day" ? "day" : parsed.view === "week" ? "week" : fallback.view;
+    if (!viewMigrated) localStorage.setItem(DEFAULT_VIEW_KEY, "1");
     return {
       theme: parsed.theme === "dark" ? "dark" : parsed.theme === "light" ? "light" : fallback.theme,
-      view: parsed.view === "day" ? "day" : parsed.view === "week" ? "week" : fallback.view,
+      view: viewMigrated ? storedView : "week",
       autoHolidays: bool(parsed.autoHolidays, true),
     };
   } catch {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpRight,
+  CalendarDays,
   Image as ImageIcon,
   LayoutGrid,
   List,
@@ -52,6 +53,9 @@ import {
 import { wallpaperStyle } from "./lib/wallpaper";
 import { downloadScheduleIcs, downloadScheduleJson, readScheduleFile } from "./lib/transfer";
 import { isNativeApp } from "./lib/nativeFile";
+import { createTemplateCourses } from "./lib/templates";
+import { syncAndroidWidget } from "./lib/widget";
+import type { TimetableTemplateId } from "./lib/templates";
 import { CourseDetail } from "./components/CourseDetail";
 import { CourseEditor } from "./components/CourseEditor";
 import type { EditorSeed } from "./components/CourseEditor";
@@ -70,6 +74,7 @@ import { TodayRail } from "./components/TodayRail";
 import { Topbar } from "./components/Topbar";
 import { WallpaperModal } from "./components/WallpaperModal";
 import { WeekHero } from "./components/WeekHero";
+import { WeekPickerModal } from "./components/WeekPickerModal";
 
 interface ConfirmState {
   title: string;
@@ -106,6 +111,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [timetablesOpen, setTimetablesOpen] = useState(false);
   const [wallpaperOpen, setWallpaperOpen] = useState(false);
+  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [editorSeed, setEditorSeed] = useState<EditorSeed | null>(null);
   const [eventSeed, setEventSeed] = useState<EventSeed | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -154,6 +160,7 @@ export default function App() {
     () => filterHolidaySessions(rawViewSessions, viewDates, prefs.autoHolidays),
     [rawViewSessions, viewDates, prefs.autoHolidays],
   );
+  const todayKey = dateKey(now);
   const currentSessions = useMemo(
     () => filterHolidaySessions(rawCurrentSessions, currentDates, prefs.autoHolidays),
     [rawCurrentSessions, currentDates, prefs.autoHolidays],
@@ -244,6 +251,10 @@ export default function App() {
   }, [data]);
 
   useEffect(() => {
+    void syncAndroidWidget(data, prefs.autoHolidays).catch(() => undefined);
+  }, [data, prefs.autoHolidays, todayKey]);
+
+  useEffect(() => {
     savePreferences(prefs);
     document.documentElement.dataset.theme = prefs.theme;
     const meta = document.querySelector('meta[name="theme-color"]');
@@ -285,6 +296,14 @@ export default function App() {
       setWeek(Math.min(Math.max(nextWeek, 1), semester.totalWeeks));
     },
     [semester.totalWeeks],
+  );
+
+  const jumpToWeek = useCallback(
+    (nextWeek: number) => {
+      goToWeek(nextWeek);
+      setWeekPickerOpen(false);
+    },
+    [goToWeek],
   );
 
   const goToday = useCallback(() => {
@@ -438,6 +457,10 @@ export default function App() {
       periods: profile.periods.map((period) => ({ ...period })),
     };
     created.periodProfileId = profile.id;
+    created.courses = createTemplateCourses(
+      (input.templateId as TimetableTemplateId | undefined) ?? "blank",
+      created.semester.totalWeeks,
+    );
     setData((current) => ({
       ...current,
       activeTimetableId: created.id,
@@ -448,7 +471,11 @@ export default function App() {
     setSelectedDay(getWeekdayNumber(new Date()));
     setTimetablesOpen(false);
     setPage("timetable");
-    notify(`已创建「${created.name}」。`);
+    notify(
+      created.courses.length > 0
+        ? `已创建「${created.name}」，包含 ${created.courses.length} 门模板课程。`
+        : `已创建「${created.name}」。`,
+    );
   };
 
   const renameTimetable = (id: string, name: string) => {
@@ -530,6 +557,17 @@ export default function App() {
       setPage("timetable");
       notify("已经清空，开始写自己的课表吧。");
     });
+  };
+
+  const renamePeriodProfile = (id: string, name: string) => {
+    setData((current) => ({
+      ...current,
+      periodProfiles: current.periodProfiles.map((profile) =>
+        profile.id === id ? { ...profile, name: name.trim().slice(0, 40) } : profile,
+      ),
+      updatedAt: new Date().toISOString(),
+    }));
+    notify("作息方案已重命名。");
   };
 
   const updateWallpaper = (wallpaper: TimetableModel["wallpaper"]) => {
@@ -671,6 +709,7 @@ export default function App() {
           }
           onOpenSettings={() => setSettingsOpen(true)}
           onManageTimetables={() => setTimetablesOpen(true)}
+          onOpenWeekPicker={() => setWeekPickerOpen(true)}
           onToggleTheme={toggleTheme}
         />
 
@@ -687,6 +726,7 @@ export default function App() {
                 onPrev={() => goToWeek(week - 1)}
                 onNext={() => goToWeek(week + 1)}
                 onToday={goToday}
+                onOpenWeekPicker={() => setWeekPickerOpen(true)}
               />
 
               <div className="content-grid">
@@ -868,6 +908,7 @@ export default function App() {
           onPrint={printTimetable}
           onClearData={clearAll}
           onToggleAutoHolidays={setAutoHolidays}
+          onRenameProfile={renamePeriodProfile}
         />
       ) : null}
 
@@ -880,6 +921,17 @@ export default function App() {
           onRename={renameTimetable}
           onDuplicate={duplicateTimetable}
           onDelete={requestDeleteTimetable}
+        />
+      ) : null}
+
+      {weekPickerOpen ? (
+        <WeekPickerModal
+          week={week}
+          currentWeek={currentWeek}
+          totalWeeks={semester.totalWeeks}
+          startDate={semester.startDate}
+          onSelect={jumpToWeek}
+          onClose={() => setWeekPickerOpen(false)}
         />
       ) : null}
 
@@ -904,6 +956,14 @@ export default function App() {
       ) : null}
 
       <Toast toast={toast} onClose={closeToast} />
+
+      {page === "timetable" && week !== currentWeek ? (
+        <button className="week-back-fab" type="button" onClick={goToday}>
+          <CalendarDays size={15} />
+          回到本周
+          <span>第 {currentWeek} 周</span>
+        </button>
+      ) : null}
 
       {page === "timetable" && courses.length > 0 ? (
         <button

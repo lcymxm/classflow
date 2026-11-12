@@ -101,6 +101,7 @@ export interface TimetableCreateInput {
   totalWeeks: number;
   showWeekends: boolean;
   periodProfileId: string;
+  templateId?: string;
 }
 
 export interface ScheduleData {

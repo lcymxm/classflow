@@ -13,6 +13,7 @@ import type { ScheduleData, TimetableCreateInput } from "../types";
 import { MAX_TIMETABLES } from "../lib/factory";
 import { getDefaultStartDate } from "../lib/date";
 import { Modal } from "./Modal";
+import { TIMETABLE_TEMPLATES } from "../lib/templates";
 
 interface TimetableManagerProps {
   data: ScheduleData;
@@ -42,6 +43,7 @@ export function TimetableManager({
   const [profileId, setProfileId] = useState(
     data.periodProfiles[0]?.id ?? "",
   );
+  const [templateId, setTemplateId] = useState("blank");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [error, setError] = useState("");
@@ -59,6 +61,7 @@ export function TimetableManager({
     setTotalWeeks(20);
     setShowWeekends(true);
     setProfileId(data.periodProfiles[0]?.id ?? "");
+    setTemplateId("blank");
     setError("");
   };
 
@@ -79,6 +82,7 @@ export function TimetableManager({
       totalWeeks: Math.min(30, Math.max(1, totalWeeks)),
       showWeekends,
       periodProfileId: profileId,
+      templateId,
     });
   };
 
@@ -189,6 +193,25 @@ export function TimetableManager({
                   }
                 />
               </label>
+              <div className="field field--wide">
+                <span className="field-label">从模板开始</span>
+                <div className="template-picker" role="group" aria-label="课表模板">
+                  {TIMETABLE_TEMPLATES.map((template) => (
+                    <button
+                      key={template.id}
+                      className={`template-option ${templateId === template.id ? "is-selected" : ""}`}
+                      type="button"
+                      onClick={() => setTemplateId(template.id)}
+                      aria-pressed={templateId === template.id}
+                    >
+                      <strong>{template.name}</strong>
+                      <small>{template.description}</small>
+                    </button>
+                  ))}
+                </div>
+                <small className="field-hint">模板课程只是起点，创建后可以自由修改。</small>
+              </div>
+
               <label className="field field--wide">
                 <span className="field-label">使用作息方案</span>
                 <select
