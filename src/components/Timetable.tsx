@@ -165,10 +165,85 @@ export function Timetable({
           <span>
             {calendarSummary.holidays.length > 0
               ? "本周有法定节假日，相关课程已自动隐藏。"
-              : "这一周还没有课。可能是课程不在本周的周次内，点空白格也可以直接添加。"}
+              : "这一周还没有课。可能是课程不在本周的周次内。"}
           </span>
         </div>
       ) : null}
+
+      <div className="week-overview" aria-label="一周课程一览">
+        <div className="week-overview-head">
+          <span>本周一览</span>
+          <small>七天课程与完整教室</small>
+        </div>
+        {days.map((day) => {
+          const date = dates[day - 1];
+          const info = WEEKDAYS[day - 1];
+          const status = dayStatuses[day] ?? null;
+          const daySessions = byDay[day] ?? [];
+          const isToday = showNow && day === todayNumber;
+          const eventCount = eventCounts[day] ?? 0;
+          return (
+            <section
+              className={`week-overview-day ${isToday ? "is-today" : ""} ${
+                status ? `is-${status.kind}` : ""
+              }`}
+              key={day}
+            >
+              <div className="week-overview-day-head">
+                <strong>{info.label}</strong>
+                <span>
+                  {date ? `${date.getMonth() + 1}/${date.getDate()}` : ""}
+                </span>
+                {status ? (
+                  <em className={`day-status-tag is-${status.kind}`}>{status.short}</em>
+                ) : null}
+                {eventCount > 0 ? <em className="week-overview-event-count">{eventCount} 日程</em> : null}
+                <span className="week-overview-day-count">
+                  {daySessions.length > 0 ? `${daySessions.length} 节` : "没课"}
+                </span>
+              </div>
+              {daySessions.length > 0 ? (
+                <div className="week-overview-courses">
+                  {daySessions.map((session) => {
+                    const start = semester.periods[session.start - 1];
+                    const end = semester.periods[session.end - 1];
+                    return (
+                      <button
+                        className="week-overview-course"
+                        type="button"
+                        key={session.id}
+                        style={{ "--tone": toneColor(session.course.tone) } as CSSProperties}
+                        onClick={() => onSelectCourse(session.course)}
+                      >
+                        <span className="week-overview-time">
+                          <strong>{start?.start ?? ""}</strong>
+                          <span>{end?.end ?? ""}</span>
+                        </span>
+                        <span className="week-overview-copy">
+                          <strong>{session.course.name}</strong>
+                          <span className="week-overview-location">
+                            {session.course.location || "地点待定"}
+                          </span>
+                          <span className="week-overview-meta">
+                            {session.course.teacher ? `${session.course.teacher} · ` : ""}
+                            第 {session.start}
+                            {session.end !== session.start ? `–${session.end}` : ""} 节 ·{" "}
+                            {formatWeeks(session.slot)}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <span className="week-overview-empty">
+                  {status?.kind === "holiday" ? "今天放假" : "这一天没有课"}
+                </span>
+              )}
+            </section>
+          );
+        })}
+      </div>
 
       <div className="timetable-scroll" ref={scrollRef}>
         <div
@@ -298,11 +373,9 @@ export function Timetable({
                             ) : null}
                             {ongoing && !conflict ? <span className="live-dot" /> : null}
                           </span>
-                          {duration > 1 ? (
-                            <span className="course-block-meta">
-                              {session.course.location || "地点待定"}
-                            </span>
-                          ) : null}
+                          <span className="course-block-meta">
+                            {session.course.location || "地点待定"}
+                          </span>
                           {duration > 2 && session.course.teacher ? (
                             <span className="course-block-foot">
                               {session.course.teacher} · {formatWeeks(session.slot)}

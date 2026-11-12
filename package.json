@@ -1,10 +1,10 @@
 {
   "name": "classflow",
   "private": true,
-  "version": "1.7.0",
+  "version": "1.8.0",
   "type": "module",
   "packageManager": "pnpm@11.28.5",
-  "description": "课序 · 本地优先的大学课表。多课表、按日期切换作息、dsh-pet 鲸鱼娘桌宠、周次滑动、同课/同老师合并、节假日与 Android 小组件。",
+  "description": "课序 · 本地优先的大学课表。多课表、按日期切换作息、dsh-pet 鲸鱼娘桌宠、一周一览、完整教室地点、周次滑动、同课/同老师合并与 Android 小组件。",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
