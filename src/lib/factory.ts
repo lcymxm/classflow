@@ -136,6 +136,7 @@ export interface SlotSeed {
   weekStart?: number;
   weekEnd?: number;
   pattern?: WeekPattern;
+  weeks?: number[];
 }
 
 export function makeSlot(
@@ -150,6 +151,7 @@ export function makeSlot(
     weekStart: seed.weekStart ?? 1,
     weekEnd: seed.weekEnd ?? totalWeeks,
     pattern: seed.pattern ?? "all",
+    ...(seed.weeks && seed.weeks.length > 0 ? { weeks: [...seed.weeks] } : {}),
   };
 }
 

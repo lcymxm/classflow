@@ -26,7 +26,7 @@ import {
   startOfWeekMonday,
   timeToMinutes,
 } from "../lib/date";
-import { getUsedMaxPeriod } from "../lib/schedule";
+import { getUsedMaxPeriod, weeksForSlot } from "../lib/schedule";
 import { isNativeApp, type ExportResult } from "../lib/nativeFile";
 
 type SettingsTab = "term" | "periods" | "data";
@@ -65,7 +65,10 @@ function usedMaxWeek(data: ScheduleData): number {
   const active = data.timetables.find((item) => item.id === data.activeTimetableId) ?? data.timetables[0];
   let max = 0;
   for (const course of active?.courses ?? []) {
-    for (const slot of course.slots) max = Math.max(max, slot.weekEnd);
+    for (const slot of course.slots) {
+      const weeks = weeksForSlot(slot);
+      if (weeks.length > 0) max = Math.max(max, weeks[weeks.length - 1]);
+    }
   }
   return max;
 }
@@ -259,7 +262,7 @@ export function SettingsModal({
                 <ArrowUpRight size={15} />
                 GitHub
               </a>
-              <span>课序 v1.1.0</span>
+              <span>课序 v1.2.0</span>
             </div>
           </nav>
 

@@ -323,6 +323,7 @@ export default function App() {
 
   const saveCourse = (course: Course) => {
     const editing = Boolean(editorSeed?.course);
+    const existed = courses.some((item) => item.id === course.id);
     updateActiveTimetable((current) => {
       const exists = current.courses.some((item) => item.id === course.id);
       return {
@@ -333,7 +334,9 @@ export default function App() {
       };
     });
     setEditorSeed(null);
-    notify(editing ? "课程已更新。" : "已加入课表。");
+    notify(
+      editing ? "课程已更新。" : existed ? "已合并到已有课程。" : "已加入课表。",
+    );
   };
 
   const requestDeleteCourse = (course: Course) => {

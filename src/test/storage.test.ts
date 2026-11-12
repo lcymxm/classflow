@@ -43,6 +43,16 @@ describe("v2 schedule normalization", () => {
     expect(demo?.timetables[0].courses).toHaveLength(0);
   });
 
+  it("normalizes explicit week selections", () => {
+    const data = createDemoSchedule(new Date(2026, 10, 12));
+    data.timetables[0].courses[0].slots[0].weeks = [1, 2, 3, 7];
+    data.timetables[0].courses[0].slots[0].weekStart = 1;
+    data.timetables[0].courses[0].slots[0].weekEnd = 7;
+    const normalized = normalizeSchedule({ data });
+    expect(normalized?.timetables[0].courses[0].slots[0].weeks).toEqual([1, 2, 3, 7]);
+    expect(normalized?.timetables[0].courses[0].slots[0].weekEnd).toBe(7);
+  });
+
   it("keeps at least two period profiles and one timetable", () => {
     const normalized = normalizeSchedule({
       version: 2,

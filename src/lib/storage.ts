@@ -128,8 +128,17 @@ function normalizeSlot(value: unknown, semester: Semester): CourseSlot | null {
   const day = int(value.day, 1, 7, 1);
   const start = int(value.start, 1, semester.periods.length, 1);
   const end = int(value.end, start, semester.periods.length, start);
-  const weekStart = int(value.weekStart, 1, semester.totalWeeks, 1);
-  const weekEnd = int(value.weekEnd, weekStart, semester.totalWeeks, semester.totalWeeks);
+  let weekStart = int(value.weekStart, 1, semester.totalWeeks, 1);
+  let weekEnd = int(value.weekEnd, weekStart, semester.totalWeeks, semester.totalWeeks);
+  const explicitWeeks = Array.isArray(value.weeks)
+    ? [...new Set(value.weeks.map((week) => int(week, 1, semester.totalWeeks, 0)).filter((week) => week > 0))].sort(
+        (a, b) => a - b,
+      )
+    : [];
+  if (explicitWeeks.length > 0) {
+    weekStart = explicitWeeks[0];
+    weekEnd = explicitWeeks[explicitWeeks.length - 1];
+  }
   return {
     id: text(value.id, 80) || uid("slot"),
     day,
@@ -137,7 +146,8 @@ function normalizeSlot(value: unknown, semester: Semester): CourseSlot | null {
     end,
     weekStart,
     weekEnd,
-    pattern: normalizePattern(value.pattern),
+    pattern: explicitWeeks.length > 0 ? "all" : normalizePattern(value.pattern),
+    ...(explicitWeeks.length > 0 ? { weeks: explicitWeeks } : {}),
   };
 }
 
@@ -145,7 +155,7 @@ function normalizeCourse(value: unknown, semester: Semester, index: number): Cou
   if (!isRecord(value)) return null;
   const name = text(value.name, 80);
   if (!name) return null;
-  const rawSlots = Array.isArray(value.slots) ? value.slots.slice(0, 10) : [];
+  const rawSlots = Array.isArray(value.slots) ? value.slots.slice(0, 20) : [];
   const seenSlotIds = new Set<string>();
   const slots: CourseSlot[] = [];
   for (const rawSlot of rawSlots) {

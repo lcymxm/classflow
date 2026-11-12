@@ -1,16 +1,17 @@
 import { useState } from "react";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Check, Layers, Plus, Trash2 } from "lucide-react";
 import type { CSSProperties, FormEvent } from "react";
 import type { Course, CourseSlot, Semester, ToneId, WeekPattern } from "../types";
 import { COURSE_TONES, toneColor } from "../types";
 import { Modal } from "./Modal";
-import {
-  nextTone,
-  makeSlot,
-  uid,
-} from "../lib/factory";
+import { nextTone, makeSlot, uid } from "../lib/factory";
 import { getWeekdayNumber, WEEKDAYS } from "../lib/date";
-import { formatSlotShort } from "../lib/schedule";
+import {
+  formatSlotShort,
+  formatWeeks,
+  mergeCourseSlots,
+  weeksForSlot,
+} from "../lib/schedule";
 
 export interface EditorSeed {
   course?: Course;
@@ -27,6 +28,7 @@ interface CourseEditorProps {
 
 interface DraftSlot extends CourseSlot {
   key: string;
+  weeks: number[];
 }
 
 interface Draft {
@@ -40,8 +42,24 @@ interface Draft {
   createdAt: string;
 }
 
+function normalizeCourseName(value: string): string {
+  return value.trim().toLocaleLowerCase().replace(/\s+/g, "");
+}
+
+function allWeeks(total: number): number[] {
+  return Array.from({ length: total }, (_, index) => index + 1);
+}
+
 function toDraftSlot(slot: CourseSlot): DraftSlot {
-  return { ...slot, key: slot.id };
+  const weeks = weeksForSlot(slot);
+  return {
+    ...slot,
+    weeks,
+    weekStart: weeks[0] ?? slot.weekStart,
+    weekEnd: weeks[weeks.length - 1] ?? slot.weekEnd,
+    pattern: "all",
+    key: slot.id,
+  };
 }
 
 function buildInitial(seed: EditorSeed, semester: Semester, courses: Course[]): Draft {
@@ -60,6 +78,7 @@ function buildInitial(seed: EditorSeed, semester: Semester, courses: Course[]): 
   }
   const day = seed.prefill?.day ?? getWeekdayNumber(new Date());
   const start = seed.prefill?.start ?? 1;
+  const weeks = allWeeks(semester.totalWeeks);
   return {
     id: uid("course"),
     name: "",
@@ -77,6 +96,7 @@ function buildInitial(seed: EditorSeed, semester: Semester, courses: Course[]): 
             weekStart: 1,
             weekEnd: semester.totalWeeks,
             pattern: "all",
+            weeks,
           },
           semester.totalWeeks,
         ),
@@ -89,9 +109,14 @@ function buildInitial(seed: EditorSeed, semester: Semester, courses: Course[]): 
 export function CourseEditor({ seed, semester, courses, onClose, onSave }: CourseEditorProps) {
   const [draft, setDraft] = useState<Draft>(() => buildInitial(seed, semester, courses));
   const [error, setError] = useState("");
+  const [mergeIntoExisting, setMergeIntoExisting] = useState(true);
   const editing = Boolean(seed.course);
+  const normalizedName = normalizeCourseName(draft.name);
+  const mergeTarget = !editing && normalizedName
+    ? courses.find((course) => normalizeCourseName(course.name) === normalizedName)
+    : undefined;
 
-  const updateSlot = (key: string, patch: Partial<CourseSlot>) => {
+  const updateSlot = (key: string, patch: Partial<DraftSlot>) => {
     setDraft((current) => ({
       ...current,
       slots: current.slots.map((slot) => {
@@ -106,7 +131,20 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
     }));
   };
 
+  const setSlotWeeks = (key: string, weeks: number[]) => {
+    const normalized = [...new Set(weeks)]
+      .filter((week) => week >= 1 && week <= semester.totalWeeks)
+      .sort((a, b) => a - b);
+    updateSlot(key, {
+      weeks: normalized,
+      weekStart: normalized[0] ?? 1,
+      weekEnd: normalized[normalized.length - 1] ?? semester.totalWeeks,
+      pattern: "all",
+    });
+  };
+
   const addSlot = () => {
+    const weeks = allWeeks(semester.totalWeeks);
     setDraft((current) => ({
       ...current,
       slots: [
@@ -120,6 +158,7 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
               weekStart: 1,
               weekEnd: semester.totalWeeks,
               pattern: "all",
+              weeks,
             },
             semester.totalWeeks,
           ),
@@ -150,14 +189,35 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
       (slot) =>
         slot.start < 1 ||
         slot.end > semester.periods.length ||
-        slot.weekStart < 1 ||
-        slot.weekEnd > semester.totalWeeks,
+        slot.weeks.length === 0 ||
+        slot.weeks.some((week) => week < 1 || week > semester.totalWeeks),
     );
     if (invalid) {
-      setError("有上课时间超出了当前学期或节次范围，请检查一下。");
+      setError("请检查节次，并至少选择一周上课。");
       return;
     }
+
     const now = new Date().toISOString();
+    const cleanSlots = draft.slots.map(({ key: _key, ...slot }) => ({
+      ...slot,
+      weeks: [...slot.weeks].sort((a, b) => a - b),
+      weekStart: slot.weeks[0],
+      weekEnd: slot.weeks[slot.weeks.length - 1],
+      pattern: "all" as WeekPattern,
+    }));
+
+    if (mergeTarget && mergeIntoExisting) {
+      onSave({
+        ...mergeTarget,
+        teacher: draft.teacher.trim() || mergeTarget.teacher,
+        location: draft.location.trim() || mergeTarget.location,
+        note: mergeTarget.note || draft.note.trim(),
+        slots: mergeCourseSlots(mergeTarget.slots, cleanSlots),
+        updatedAt: now,
+      });
+      return;
+    }
+
     const course: Course = {
       id: draft.id,
       name,
@@ -165,12 +225,15 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
       location: draft.location.trim(),
       tone: draft.tone,
       note: draft.note.trim(),
-      slots: draft.slots.map(({ key: _key, ...slot }) => slot),
+      slots: cleanSlots,
       createdAt: draft.createdAt,
       updatedAt: now,
     };
     onSave(course);
   };
+
+  const slotSummary = (slot: DraftSlot): string =>
+    slot.weeks.length > 0 ? formatWeeks(slot) : "未选周次";
 
   return (
     <Modal
@@ -185,7 +248,11 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
           </button>
           <button className="primary-button" type="submit" form="course-form">
             <Check size={16} />
-            {editing ? "保存修改" : "加入课表"}
+            {editing
+              ? "保存修改"
+              : mergeTarget && mergeIntoExisting
+                ? "合并到已有课程"
+                : "加入课表"}
           </button>
         </>
       }
@@ -206,8 +273,46 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
               placeholder="例如：高等数学 A（上）"
               maxLength={80}
               autoFocus
+              list={!editing && courses.length > 0 ? "course-name-options" : undefined}
             />
+            {!editing && courses.length > 0 ? (
+              <datalist id="course-name-options">
+                {courses.map((course) => (
+                  <option value={course.name} key={course.id} />
+                ))}
+              </datalist>
+            ) : null}
           </label>
+
+          {mergeTarget ? (
+            <div className="merge-hint">
+              <span className="merge-hint-icon">
+                <Layers size={17} />
+              </span>
+              <div className="merge-hint-copy">
+                <strong>识别到已有课程「{mergeTarget.name}」</strong>
+                <span>
+                  {[mergeTarget.teacher, mergeTarget.location].filter(Boolean).join(" · ") ||
+                    "未填写老师与地点"}
+                  {" · "}
+                  {mergeTarget.slots.length} 个时间段
+                </span>
+              </div>
+              <label className="merge-toggle">
+                <input
+                  type="checkbox"
+                  checked={mergeIntoExisting}
+                  onChange={(event) => setMergeIntoExisting(event.target.checked)}
+                />
+                <span>合并到已有课程</span>
+              </label>
+              <p>
+                {mergeIntoExisting
+                  ? "保存时会把下面的时间段合并进去，不会重复建立同一门课。"
+                  : "保存时会新建一门同名课程。"}
+              </p>
+            </div>
+          ) : null}
 
           <div className="form-grid">
             <label className="field">
@@ -241,7 +346,7 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
           <div className="form-section-title">
             <div>
               <h3>上课时间</h3>
-              <p>同一门课有多个时间段时，可以继续添加。</p>
+              <p>同一门课有多个时间段时，可以继续添加；周次可逐周勾选。</p>
             </div>
             <button className="small-button" type="button" onClick={addSlot}>
               <Plus size={14} />
@@ -254,7 +359,9 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
               <div className="slot-editor" key={slot.key}>
                 <div className="slot-editor-head">
                   <span className="slot-index">时段 {String(index + 1).padStart(2, "0")}</span>
-                  <span className="slot-preview">{formatSlotShort(slot)}</span>
+                  <span className="slot-preview">
+                    {formatSlotShort(slot)} · {slotSummary(slot)}
+                  </span>
                   <button
                     className="slot-remove"
                     type="button"
@@ -308,59 +415,73 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
                       ))}
                     </select>
                   </label>
-                  <label className="field">
-                    <span className="field-label">频率</span>
-                    <select
-                      className="field-input"
-                      value={slot.pattern}
-                      onChange={(event) =>
-                        updateSlot(slot.key, { pattern: event.target.value as WeekPattern })
+                </div>
+
+                <div className="week-picker">
+                  <div className="week-picker-head">
+                    <span className="field-label">上课周次</span>
+                    <span className="week-picker-summary">
+                      {slot.weeks.length > 0
+                        ? `${formatWeeks(slot)} · 共 ${slot.weeks.length} 周`
+                        : "还没有选择周次"}
+                    </span>
+                  </div>
+                  <div className="week-picker-actions">
+                    <button
+                      type="button"
+                      onClick={() => setSlotWeeks(slot.key, allWeeks(semester.totalWeeks))}
+                    >
+                      全选
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSlotWeeks(
+                          slot.key,
+                          allWeeks(semester.totalWeeks).filter((week) => week % 2 === 1),
+                        )
                       }
                     >
-                      <option value="all">每周</option>
-                      <option value="odd">单周</option>
-                      <option value="even">双周</option>
-                    </select>
-                  </label>
-                  <label className="field field--week">
-                    <span className="field-label">周次范围</span>
-                    <span className="week-range">
-                      <input
-                        className="field-input number-input"
-                        type="number"
-                        min={1}
-                        max={semester.totalWeeks}
-                        value={slot.weekStart}
-                        onChange={(event) =>
-                          updateSlot(slot.key, {
-                            weekStart: Math.min(
-                              semester.totalWeeks,
-                              Math.max(1, Number(event.target.value) || 1),
-                            ),
-                          })
-                        }
-                        aria-label="开始周"
-                      />
-                      <span>—</span>
-                      <input
-                        className="field-input number-input"
-                        type="number"
-                        min={1}
-                        max={semester.totalWeeks}
-                        value={slot.weekEnd}
-                        onChange={(event) =>
-                          updateSlot(slot.key, {
-                            weekEnd: Math.min(
-                              semester.totalWeeks,
-                              Math.max(1, Number(event.target.value) || 1),
-                            ),
-                          })
-                        }
-                        aria-label="结束周"
-                      />
-                      <span className="week-suffix">周</span>
-                    </span>
-                  </label>
+                      单周
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSlotWeeks(
+                          slot.key,
+                          allWeeks(semester.totalWeeks).filter((week) => week % 2 === 0),
+                        )
+                      }
+                    >
+                      双周
+                    </button>
+                    <button type="button" onClick={() => setSlotWeeks(slot.key, [])}>
+                      清空
+                    </button>
+                  </div>
+                  <div className="week-picker-grid" role="group" aria-label={`时段 ${index + 1} 上课周次`}>
+                    {allWeeks(semester.totalWeeks).map((week) => {
+                      const selected = slot.weeks.includes(week);
+                      return (
+                        <button
+                          key={week}
+                          className={`week-chip ${selected ? "is-selected" : ""}`}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() =>
+                            setSlotWeeks(
+                              slot.key,
+                              selected
+                                ? slot.weeks.filter((item) => item !== week)
+                                : [...slot.weeks, week],
+                            )
+                          }
+                        >
+                          {week}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             ))}

@@ -21,7 +21,63 @@ export const PATTERN_LABELS: Record<WeekPattern, string> = {
   even: "双周",
 };
 
+export function weeksForSlot(slot: CourseSlot): number[] {
+  if (slot.weeks && slot.weeks.length > 0) {
+    return [...new Set(slot.weeks)].sort((a, b) => a - b);
+  }
+  const weeks: number[] = [];
+  for (let week = slot.weekStart; week <= slot.weekEnd; week += 1) {
+    if (slot.pattern === "odd" && week % 2 === 0) continue;
+    if (slot.pattern === "even" && week % 2 === 1) continue;
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+export function compressWeeks(weeks: number[]): string {
+  const sorted = [...new Set(weeks)].filter((week) => week > 0).sort((a, b) => a - b);
+  if (sorted.length === 0) return "";
+  const ranges: Array<[number, number]> = [];
+  for (const week of sorted) {
+    const last = ranges[ranges.length - 1];
+    if (last && week === last[1] + 1) {
+      last[1] = week;
+    } else {
+      ranges.push([week, week]);
+    }
+  }
+  return ranges.map(([start, end]) => (start === end ? `${start}` : `${start}–${end}`)).join("、");
+}
+
+export function mergeCourseSlots(
+  base: CourseSlot[],
+  additions: CourseSlot[],
+): CourseSlot[] {
+  const result = base.map((slot) => ({ ...slot }));
+  for (const addition of additions) {
+    const matching = result.find(
+      (slot) =>
+        slot.day === addition.day &&
+        slot.start === addition.start &&
+        slot.end === addition.end,
+    );
+    if (!matching) {
+      result.push({ ...addition });
+      continue;
+    }
+    const weeks = [...new Set([...weeksForSlot(matching), ...weeksForSlot(addition)])].sort(
+      (a, b) => a - b,
+    );
+    matching.weeks = weeks;
+    matching.weekStart = weeks[0] ?? 1;
+    matching.weekEnd = weeks[weeks.length - 1] ?? matching.weekEnd;
+    matching.pattern = "all";
+  }
+  return result;
+}
+
 export function isSlotActiveInWeek(slot: CourseSlot, week: number): boolean {
+  if (slot.weeks && slot.weeks.length > 0) return slot.weeks.includes(week);
   if (week < slot.weekStart || week > slot.weekEnd) return false;
   if (slot.pattern === "odd") return week % 2 === 1;
   if (slot.pattern === "even") return week % 2 === 0;
@@ -139,6 +195,10 @@ export function getWeekStats(sessions: Session[], periods: Period[]): WeekStats 
 }
 
 export function formatWeeks(slot: CourseSlot): string {
+  if (slot.weeks && slot.weeks.length > 0) {
+    const compressed = compressWeeks(slot.weeks);
+    return `第 ${compressed} 周`;
+  }
   const range =
     slot.weekStart === slot.weekEnd
       ? `第 ${slot.weekStart} 周`

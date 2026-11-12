@@ -5243,6 +5243,163 @@ input[type="date"].field-input {
   margin-bottom: 9px;
 }
 
+
+/* Course weeks + same-course merge */
+.slot-editor-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.slot-preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merge-hint {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 11px;
+  margin-top: 9px;
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--line));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--success) 5%, var(--surface));
+}
+
+.merge-hint-icon {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  color: var(--success);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+
+.merge-hint-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.merge-hint-copy strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 9.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merge-hint-copy span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.merge-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-2);
+  font-size: 8.5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.merge-toggle input {
+  accent-color: var(--coral);
+}
+
+.merge-hint > p {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.week-picker {
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.week-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.week-picker-summary {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.week-picker-actions {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 7px;
+}
+
+.week-picker-actions button {
+  min-height: 22px;
+  padding: 0 7px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  font-size: 7.5px;
+}
+
+.week-picker-actions button:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.week-picker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.week-chip {
+  display: grid;
+  width: 26px;
+  height: 24px;
+  place-items: center;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  font-family: var(--mono);
+  font-size: 7.5px;
+  line-height: 1;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.week-chip:hover {
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.week-chip.is-selected {
+  color: #fff8f1;
+  border-color: var(--coral);
+  background: var(--coral);
+}
+
+html[data-theme="dark"] .week-chip.is-selected {
+  color: #17211d;
+}
+
 /* Event editor */
 .event-editor-modal {
   width: min(590px, calc(100vw - 30px));
@@ -5635,6 +5792,31 @@ input[type="date"].field-input {
   .wallpaper-dim input[type="range"] {
     grid-column: 1;
     grid-row: 2;
+  }
+
+  .slot-editor-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .slot-editor-grid .field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .merge-hint {
+    grid-template-columns: 29px minmax(0, 1fr);
+  }
+
+  .merge-toggle {
+    grid-column: 2;
+  }
+
+  .week-picker-grid {
+    gap: 3px;
+  }
+
+  .week-chip {
+    width: 25px;
+    height: 23px;
   }
 
   .event-time-grid {

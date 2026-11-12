@@ -31,6 +31,8 @@ export interface CourseSlot {
   weekStart: number;
   weekEnd: number;
   pattern: WeekPattern;
+  /** Explicit week numbers. When present, these take precedence over range + pattern. */
+  weeks?: number[];
 }
 
 export interface Course {

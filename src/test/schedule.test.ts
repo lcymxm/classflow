@@ -2,13 +2,16 @@ import { describe, expect, it } from "vitest";
 import { createDemoSchedule } from "../lib/factory";
 import {
   buildSessions,
-  formatWeeks,
   getNextSession,
   getPeriodNowProgress,
   getUsedMaxPeriod,
   getWeekStats,
   isSlotActiveInWeek,
   layoutSessionsForDay,
+  mergeCourseSlots,
+  weeksForSlot,
+  compressWeeks,
+  formatWeeks,
 } from "../lib/schedule";
 import { dateKey, getWeekDates } from "../lib/date";
 import type { Course, CourseSlot, Session } from "../types";
@@ -88,6 +91,24 @@ describe("schedule rules", () => {
     expect(stats.sessionCount).toBe(10);
     expect(stats.minutes).toBeGreaterThan(0);
     expect(stats.busiestDay).toBe(1);
+  });
+
+  it("supports explicit, non-contiguous course weeks", () => {
+    const custom = slot({ weekStart: 1, weekEnd: 9, weeks: [1, 2, 3, 5, 7, 8, 9] });
+    expect(weeksForSlot(custom)).toEqual([1, 2, 3, 5, 7, 8, 9]);
+    expect(isSlotActiveInWeek(custom, 5)).toBe(true);
+    expect(isSlotActiveInWeek(custom, 6)).toBe(false);
+    expect(compressWeeks([1, 2, 3, 5, 7, 8, 9])).toBe("1–3、5、7–9");
+    expect(formatWeeks(custom)).toBe("第 1–3、5、7–9 周");
+  });
+
+  it("merges repeated time slots for the same course", () => {
+    const base = slot({ id: "base", weeks: [1, 2, 3] });
+    const addition = slot({ id: "added", weeks: [3, 4, 5] });
+    const merged = mergeCourseSlots([base], [addition]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].id).toBe("base");
+    expect(weeksForSlot(merged[0])).toEqual([1, 2, 3, 4, 5]);
   });
 
   it("formats week descriptions and finds the next class", () => {
