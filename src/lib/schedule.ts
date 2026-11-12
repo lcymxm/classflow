@@ -49,6 +49,36 @@ export function compressWeeks(weeks: number[]): string {
   return ranges.map(([start, end]) => (start === end ? `${start}` : `${start}–${end}`)).join("、");
 }
 
+
+export function normalizeCourseNameKey(value: string): string {
+  return value.trim().toLocaleLowerCase().replace(/\s+/g, "");
+}
+
+export function normalizeTeacherKey(value: string): string {
+  return value.trim().toLocaleLowerCase().replace(/\s+/g, "");
+}
+
+/**
+ * Same-course matching uses both the course name and teacher. A blank teacher
+ * on the existing course is treated as unknown, so it can be filled in later.
+ */
+export function findMergeCourse(
+  courses: Course[],
+  name: string,
+  teacher: string,
+): Course | undefined {
+  const courseName = normalizeCourseNameKey(name);
+  if (!courseName) return undefined;
+  const teacherKey = normalizeTeacherKey(teacher);
+  const sameName = courses.filter(
+    (course) => normalizeCourseNameKey(course.name) === courseName,
+  );
+  return (
+    sameName.find((course) => normalizeTeacherKey(course.teacher) === teacherKey) ??
+    sameName.find((course) => !normalizeTeacherKey(course.teacher))
+  );
+}
+
 export function mergeCourseSlots(
   base: CourseSlot[],
   additions: CourseSlot[],

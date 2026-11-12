@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Layers, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Check, Layers, Plus, Trash2 } from "lucide-react";
 import type { CSSProperties, FormEvent } from "react";
 import type { Course, CourseSlot, Semester, ToneId, WeekPattern } from "../types";
 import { COURSE_TONES, toneColor } from "../types";
@@ -9,7 +9,10 @@ import { getWeekdayNumber, WEEKDAYS } from "../lib/date";
 import {
   formatSlotShort,
   formatWeeks,
+  findMergeCourse,
   mergeCourseSlots,
+  normalizeCourseNameKey,
+  normalizeTeacherKey,
   weeksForSlot,
 } from "../lib/schedule";
 
@@ -40,10 +43,6 @@ interface Draft {
   note: string;
   slots: DraftSlot[];
   createdAt: string;
-}
-
-function normalizeCourseName(value: string): string {
-  return value.trim().toLocaleLowerCase().replace(/\s+/g, "");
 }
 
 function allWeeks(total: number): number[] {
@@ -110,11 +109,28 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
   const [draft, setDraft] = useState<Draft>(() => buildInitial(seed, semester, courses));
   const [error, setError] = useState("");
   const [mergeIntoExisting, setMergeIntoExisting] = useState(true);
+  const [existingOpen, setExistingOpen] = useState(false);
   const editing = Boolean(seed.course);
-  const normalizedName = normalizeCourseName(draft.name);
-  const mergeTarget = !editing && normalizedName
-    ? courses.find((course) => normalizeCourseName(course.name) === normalizedName)
-    : undefined;
+  const normalizedName = normalizeCourseNameKey(draft.name);
+  const sameNameCourses = !editing && normalizedName
+    ? courses.filter((course) => normalizeCourseNameKey(course.name) === normalizedName)
+    : [];
+  const mergeTarget = editing ? undefined : findMergeCourse(courses, draft.name, draft.teacher);
+  const teacherChoices = Array.from(
+    new Map(
+      sameNameCourses.map((course) => [normalizeTeacherKey(course.teacher), course.teacher]),
+    ).values(),
+  );
+  const chooseExistingCourse = (course: Course) => {
+    setDraft((current) => ({
+      ...current,
+      name: course.name,
+      teacher: course.teacher,
+    }));
+    setExistingOpen(false);
+    setMergeIntoExisting(true);
+    setError("");
+  };
 
   const updateSlot = (key: string, patch: Partial<DraftSlot>) => {
     setDraft((current) => ({
@@ -261,28 +277,92 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
         {error ? <p className="form-error">{error}</p> : null}
 
         <div className="form-section">
-          <label className="field field--wide">
+          <div className="field field--wide">
             <span className="field-label">课程名称</span>
-            <input
-              className="field-input field-input--title"
-              value={draft.name}
-              onChange={(event) => {
-                setError("");
-                setDraft((current) => ({ ...current, name: event.target.value }));
-              }}
-              placeholder="例如：高等数学 A（上）"
-              maxLength={80}
-              autoFocus
-              list={!editing && courses.length > 0 ? "course-name-options" : undefined}
-            />
-            {!editing && courses.length > 0 ? (
-              <datalist id="course-name-options">
-                {courses.map((course) => (
-                  <option value={course.name} key={course.id} />
-                ))}
-              </datalist>
+            <div className="course-name-row">
+              <input
+                className="field-input field-input--title"
+                value={draft.name}
+                onChange={(event) => {
+                  setError("");
+                  setDraft((current) => ({ ...current, name: event.target.value }));
+                  setExistingOpen(false);
+                }}
+                placeholder="例如：高等数学 A（上）"
+                maxLength={80}
+                autoFocus
+              />
+              {!editing && courses.length > 0 ? (
+                <button
+                  className="existing-course-trigger"
+                  type="button"
+                  onClick={() => setExistingOpen((open) => !open)}
+                  aria-expanded={existingOpen}
+                  aria-controls="existing-course-picker"
+                >
+                  <BookOpen size={14} />
+                  已有课程
+                  <span>{courses.length}</span>
+                </button>
+              ) : null}
+            </div>
+            {existingOpen && !editing ? (
+              <div className="existing-course-picker" id="existing-course-picker">
+                <div className="existing-course-picker-head">
+                  <strong>选择已有课程</strong>
+                  <span>点选后自动带入老师</span>
+                </div>
+                <div className="existing-course-list">
+                  {[...courses]
+                    .sort((a, b) => a.name.localeCompare(b.name, "zh-CN"))
+                    .map((course) => (
+                      <button
+                        key={course.id}
+                        className="existing-course-item"
+                        type="button"
+                        onClick={() => chooseExistingCourse(course)}
+                      >
+                        <span
+                          className="existing-course-dot"
+                          style={{ background: toneColor(course.tone) }}
+                          aria-hidden="true"
+                        />
+                        <span className="existing-course-copy">
+                          <strong>{course.name}</strong>
+                          <small>
+                            {[course.teacher, course.location].filter(Boolean).join(" · ") ||
+                              "未填写老师与地点"}
+                          </small>
+                        </span>
+                        <span className="existing-course-meta">
+                          {course.slots.length} 段
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              </div>
             ) : null}
-          </label>
+          </div>
+
+          {!editing && sameNameCourses.length > 0 && !mergeTarget ? (
+            <div className="same-name-teachers">
+              <span>同名课程已有：</span>
+              {teacherChoices.map((teacher) => (
+                <button
+                  key={teacher || "empty"}
+                  type="button"
+                  className="teacher-choice"
+                  onClick={() => {
+                    setDraft((current) => ({ ...current, teacher }));
+                    setError("");
+                  }}
+                >
+                  {teacher || "未填老师"}
+                </button>
+              ))}
+              <small>填写相同老师名后自动合并</small>
+            </div>
+          ) : null}
 
           {mergeTarget ? (
             <div className="merge-hint">
@@ -290,7 +370,7 @@ export function CourseEditor({ seed, semester, courses, onClose, onSave }: Cours
                 <Layers size={17} />
               </span>
               <div className="merge-hint-copy">
-                <strong>识别到已有课程「{mergeTarget.name}」</strong>
+                <strong>同一门课「{mergeTarget.name}」</strong>
                 <span>
                   {[mergeTarget.teacher, mergeTarget.location].filter(Boolean).join(" · ") ||
                     "未填写老师与地点"}

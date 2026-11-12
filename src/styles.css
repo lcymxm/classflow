@@ -994,12 +994,18 @@ html[data-theme="dark"] .topbar-add kbd {
    -------------------------------------------------------------------------- */
 
 .week-hero {
+  touch-action: pan-y;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 26px;
   padding: 36px 2px 26px;
   animation: fade-up 420ms both;
+}
+
+.week-hero.is-swiping {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .hero-kicker {
@@ -1092,6 +1098,16 @@ html[data-theme="dark"] .topbar-add kbd {
   font-family: var(--display);
   font-size: 16px;
   font-weight: 600;
+}
+
+.hero-swipe-hint {
+  display: none;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 7.5px;
+  letter-spacing: 0.03em;
 }
 
 .hero-stats i {
@@ -5695,6 +5711,173 @@ html[data-theme="whale"] .whale-note strong {
   white-space: nowrap;
 }
 
+
+/* Manual existing-course picker and teacher-aware merging */
+.course-name-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.course-name-row .field-input {
+  min-width: 0;
+  flex: 1;
+}
+
+.existing-course-trigger {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 35px;
+  padding: 0 9px;
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.existing-course-trigger:hover,
+.existing-course-trigger[aria-expanded="true"] {
+  color: var(--ink);
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+.existing-course-trigger > span {
+  display: grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  color: var(--coral);
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--coral) 10%, transparent);
+  font-family: var(--mono);
+  font-size: 7px;
+}
+
+.existing-course-picker {
+  margin-top: 5px;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.existing-course-picker-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.existing-course-picker-head strong {
+  color: var(--ink);
+  font-size: 8.5px;
+}
+
+.existing-course-picker-head span {
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.existing-course-list {
+  max-height: 214px;
+  overflow: auto;
+}
+
+.existing-course-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  text-align: left;
+}
+
+.existing-course-item:last-child {
+  border-bottom: 0;
+}
+
+.existing-course-item:hover {
+  background: var(--surface-2);
+}
+
+.existing-course-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.existing-course-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.existing-course-copy strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 8.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.existing-course-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.existing-course-meta {
+  flex: 0 0 auto;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 7px;
+}
+
+.same-name-teachers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.teacher-choice {
+  padding: 3px 7px;
+  color: var(--coral-deep);
+  border: 1px solid color-mix(in srgb, var(--coral) 24%, var(--line));
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--coral) 6%, var(--surface));
+  font-size: 8px;
+}
+
+.teacher-choice:hover {
+  border-color: var(--coral);
+}
+
+.same-name-teachers small {
+  color: var(--faint);
+  font-size: 7px;
+}
+
 .merge-hint {
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) auto;
@@ -6616,6 +6799,10 @@ html[data-theme="whale"] .week-pick.is-selected span {
 
   .theme-picker-head .field-hint {
     text-align: left;
+  }
+
+  .hero-swipe-hint {
+    display: flex;
   }
 
   .week-picker-grid--modal {

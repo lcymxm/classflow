@@ -12,6 +12,7 @@ import {
   weeksForSlot,
   compressWeeks,
   formatWeeks,
+  findMergeCourse,
 } from "../lib/schedule";
 import { dateKey, getWeekDates } from "../lib/date";
 import type { Course, CourseSlot, Session } from "../types";
@@ -132,5 +133,18 @@ describe("schedule rules", () => {
       period: 1,
     });
     expect(getUsedMaxPeriod(timetable.courses)).toBe(10);
+  });
+});
+
+describe("same-course matching", () => {
+  it("requires the same teacher when both teachers are known", () => {
+    const base = { ...course("高等数学", [slot()]), teacher: "张老师" };
+    expect(findMergeCourse([base], " 高等数学 ", "张老师")?.id).toBe(base.id);
+    expect(findMergeCourse([base], "高等数学", "李老师")).toBeUndefined();
+  });
+
+  it("allows filling an unknown teacher on an existing course", () => {
+    const base = course("大学英语", [slot()]);
+    expect(findMergeCourse([base], "大学英语", "王老师")?.id).toBe(base.id);
   });
 });
