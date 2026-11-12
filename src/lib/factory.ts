@@ -226,11 +226,15 @@ export function createBlankTimetable(
     profiles.find((item) => item.id === STANDARD_PROFILE_ID) ?? profiles[0];
   if (!profile) throw new Error("At least one period profile is required.");
   const timestamp = new Date().toISOString();
+  const semester = createBlankSemester(profile, now);
   return {
     id: uid("timetable"),
     name,
-    semester: createBlankSemester(profile, now),
+    semester,
     periodProfileId: profile.id,
+    periodRules: [
+      { id: uid("period-rule"), from: semester.startDate, profileId: profile.id },
+    ],
     courses: [],
     events: [],
     wallpaper: createDefaultWallpaper(),
@@ -262,6 +266,10 @@ export function cloneTimetable(source: Timetable, name: string): Timetable {
     id: uid("timetable"),
     name,
     periodProfileId: source.periodProfileId,
+    periodRules: (source.periodRules ?? []).map((rule) => ({
+      ...rule,
+      id: uid("period-rule"),
+    })),
     semester: {
       ...source.semester,
       periods: source.semester.periods.map((period) => ({ ...period })),
@@ -409,6 +417,7 @@ export function createDemoSchedule(now = new Date()): ScheduleData {
       periods: period.map((item) => ({ ...item })),
     },
     periodProfileId: profile.id,
+    periodRules: [{ id: "demo-rule", from: dateKey(start), profileId: profile.id }],
     courses,
     events: [],
     wallpaper: createDefaultWallpaper(),

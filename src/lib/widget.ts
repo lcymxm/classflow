@@ -10,6 +10,7 @@ import {
 } from "./date";
 import { buildSessions } from "./schedule";
 import { filterHolidaySessions, getCalendarInfo } from "./holidays";
+import { periodsForDate } from "./periods";
 
 interface WidgetClass {
   name: string;
@@ -66,6 +67,7 @@ export function buildWidgetPayload(
     const weekday = getWeekdayNumber(date);
     const info = autoHolidays ? getCalendarInfo(date) : null;
     const weekDates = getWeekDates(semester.startDate, position.week);
+    const periods = periodsForDate(active, data.periodProfiles, date);
     let classes: WidgetClass[] = [];
 
     if (position.state === "during") {
@@ -78,8 +80,8 @@ export function buildWidgetPayload(
         .sort((a, b) => a.start - b.start);
       classes = sessions.map((session) => ({
         name: session.course.name,
-        start: semester.periods[session.start - 1]?.start ?? "",
-        end: semester.periods[session.end - 1]?.end ?? "",
+        start: periods[session.start - 1]?.start ?? "",
+        end: periods[session.end - 1]?.end ?? "",
         location: session.course.location,
       }));
     }

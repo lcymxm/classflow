@@ -17,6 +17,7 @@ import type {
   ScheduleEvent,
   Semester,
   PeriodProfile,
+  PeriodRule,
   Theme,
   Timetable as TimetableModel,
   TimetableCreateInput,
@@ -33,6 +34,7 @@ import {
   startOfWeekMonday,
 } from "./lib/date";
 import { buildSessions, getWeekStats } from "./lib/schedule";
+import { periodsForDate } from "./lib/periods";
 import {
   MAX_TIMETABLES,
   cloneTimetable,
@@ -167,13 +169,25 @@ export default function App() {
     () => filterHolidaySessions(rawCurrentSessions, currentDates, prefs.autoHolidays),
     [rawCurrentSessions, currentDates, prefs.autoHolidays],
   );
+  const viewPeriods = useMemo(
+    () => periodsForDate(timetable, data.periodProfiles, viewDates[viewDates.length - 1] ?? new Date()),
+    [timetable, data.periodProfiles, viewDates],
+  );
+  const currentPeriods = useMemo(
+    () => periodsForDate(timetable, data.periodProfiles, now),
+    [timetable, data.periodProfiles, todayKey],
+  );
+  const viewSemester = useMemo(
+    () => ({ ...semester, periods: viewPeriods }),
+    [semester, viewPeriods],
+  );
   const viewStats = useMemo(
-    () => getWeekStats(viewSessions, semester.periods),
-    [viewSessions, semester.periods],
+    () => getWeekStats(viewSessions, viewPeriods),
+    [viewSessions, viewPeriods],
   );
   const currentStats = useMemo(
-    () => getWeekStats(currentSessions, semester.periods),
-    [currentSessions, semester.periods],
+    () => getWeekStats(currentSessions, currentPeriods),
+    [currentSessions, currentPeriods],
   );
   const calendarSummary = useMemo(
     () => getCalendarSummary(viewDates, prefs.autoHolidays),
@@ -416,6 +430,7 @@ export default function App() {
     nextSemester: Semester,
     periodProfileId: string | null,
     periodProfiles: PeriodProfile[],
+    periodRules: PeriodRule[],
   ) => {
     const profileMap = new Map(periodProfiles.map((profile) => [profile.id, profile]));
     const timestamp = new Date().toISOString();
@@ -429,6 +444,7 @@ export default function App() {
             ...timetable,
             semester: nextSemester,
             periodProfileId,
+            periodRules: periodRules.map((rule) => ({ ...rule })),
             updatedAt: timestamp,
           };
         }
@@ -490,6 +506,9 @@ export default function App() {
       periods: profile.periods.map((period) => ({ ...period })),
     };
     created.periodProfileId = profile.id;
+    created.periodRules = [
+      { id: `rule-${created.semester.startDate}`, from: created.semester.startDate, profileId: profile.id },
+    ];
     created.courses = createTemplateCourses(
       (input.templateId as TimetableTemplateId | undefined) ?? "blank",
       created.semester.totalWeeks,
@@ -823,7 +842,7 @@ export default function App() {
 
                   {isDayView ? (
                     <DayView
-                      semester={semester}
+                      semester={viewSemester}
                       week={week}
                       currentWeek={currentWeek}
                       dates={viewDates}
@@ -841,7 +860,7 @@ export default function App() {
                     />
                   ) : (
                     <Timetable
-                      semester={semester}
+                      semester={viewSemester}
                       week={week}
                       currentWeek={currentWeek}
                       dates={viewDates}
@@ -867,7 +886,7 @@ export default function App() {
                   totalWeeks={semester.totalWeeks}
                   weekDates={currentDates}
                   sessions={currentSessions}
-                  periods={semester.periods}
+                  periods={currentPeriods}
                   stats={currentStats}
                   days={currentDays}
                   holiday={currentDayStatuses[todayNumber] ?? null}
@@ -881,7 +900,7 @@ export default function App() {
           ) : (
             <CourseLibrary
               courses={courses}
-              semester={semester}
+              semester={viewSemester}
               onAddCourse={() => openEditor()}
               onSelectCourse={openCourseDetail}
               onEditCourse={(course) => openEditor({ course })}
@@ -904,7 +923,7 @@ export default function App() {
         <CourseEditor
           key={editorSeed.course?.id ?? "new"}
           seed={editorSeed}
-          semester={semester}
+          semester={viewSemester}
           courses={courses}
           onClose={() => setEditorSeed(null)}
           onSave={saveCourse}
@@ -914,7 +933,7 @@ export default function App() {
       {detailCourse ? (
         <CourseDetail
           course={detailCourse}
-          semester={semester}
+          semester={viewSemester}
           onClose={() => setDetailId(null)}
           onEdit={() => {
             setDetailId(null);

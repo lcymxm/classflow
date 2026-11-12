@@ -1,5 +1,6 @@
 import { CalendarPlus, Menu, Moon, Plus, Settings2, Sun, Waves } from "lucide-react";
 import type { AppPage, Theme } from "../types";
+import { WhaleMascot } from "./WhaleMascot";
 
 interface TopbarProps {
   page: AppPage;
@@ -37,6 +38,12 @@ export function Topbar({
       <button className="icon-button mobile-menu" type="button" onClick={onOpenMenu} aria-label="打开导航">
         <Menu size={19} />
       </button>
+
+      {theme === "whale" ? (
+        <span className="topbar-whale" aria-hidden="true">
+          <WhaleMascot size={30} />
+        </span>
+      ) : null}
 
       <div className="breadcrumb">
         <button

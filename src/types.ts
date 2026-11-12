@@ -61,6 +61,13 @@ export interface PeriodProfile {
   periods: Period[];
 }
 
+export interface PeriodRule {
+  id: string;
+  /** Date key (YYYY-MM-DD) from which this profile applies. */
+  from: string;
+  profileId: string;
+}
+
 export type WallpaperPreset = "paper" | "sage" | "dawn" | "dusk";
 
 export interface Wallpaper {
@@ -87,6 +94,7 @@ export interface Timetable {
   name: string;
   semester: Semester;
   periodProfileId: string | null;
+  periodRules: PeriodRule[];
   courses: Course[];
   events: ScheduleEvent[];
   wallpaper: Wallpaper;

@@ -6,6 +6,7 @@ import {
   Check,
   Clock,
   Pencil,
+  Plus,
   X,
   Database,
   Download,
@@ -15,7 +16,15 @@ import {
   Waves,
 } from "lucide-react";
 import type { FormEvent } from "react";
-import type { ImportResult, Period, PeriodProfile, ScheduleData, Semester, Theme } from "../types";
+import type {
+  ImportResult,
+  Period,
+  PeriodProfile,
+  PeriodRule,
+  ScheduleData,
+  Semester,
+  Theme,
+} from "../types";
 import { Modal } from "./Modal";
 import {
   MAX_PERIODS,
@@ -44,6 +53,7 @@ interface SettingsModalProps {
     semester: Semester,
     periodProfileId: string | null,
     periodProfiles: PeriodProfile[],
+    periodRules: PeriodRule[],
   ) => void;
   onExportJson: () => Promise<ExportResult>;
   onExportIcs: () => Promise<ExportResult & { count: number }>;
@@ -106,6 +116,14 @@ export function SettingsModal({
     periods: active.semester.periods.map((period) => ({ ...period })),
   }));
   const [profileId, setProfileId] = useState<string | null>(active.periodProfileId);
+  const [periodRules, setPeriodRules] = useState<PeriodRule[]>(() => {
+    const rules = active.periodRules?.length ? active.periodRules : [];
+    if (rules.length > 0) return rules.map((rule) => ({ ...rule }));
+    const fallback = active.periodProfileId;
+    return fallback
+      ? [{ id: `rule-${active.semester.startDate}`, from: active.semester.startDate, profileId: fallback }]
+      : [];
+  });
   const [profilePeriods, setProfilePeriods] = useState<Record<string, Period[]>>(() =>
     Object.fromEntries(
       data.periodProfiles.map((profile) => [
@@ -135,6 +153,32 @@ export function SettingsModal({
     maxWeek > draft.totalWeeks
       ? `已有课程安排到第 ${maxWeek} 周，总周数不能少于 ${maxWeek}。`
       : "";
+
+  const updatePeriodRule = (id: string, patch: Partial<PeriodRule>) => {
+    setError("");
+    setPeriodRules((current) =>
+      current.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)),
+    );
+  };
+
+  const addPeriodRule = () => {
+    const profile = currentProfile ?? data.periodProfiles[0];
+    if (!profile) return;
+    setPeriodRules((current) => [
+      ...current,
+      {
+        id: `rule-${Date.now()}-${current.length}`,
+        from: dateKey(new Date()),
+        profileId: profile.id,
+      },
+    ]);
+    setError("");
+  };
+
+  const removePeriodRule = (id: string) => {
+    setPeriodRules((current) => (current.length <= 1 ? current : current.filter((rule) => rule.id !== id)));
+    setError("");
+  };
 
   const setPeriodCount = (count: number) => {
     setError("");
@@ -206,6 +250,28 @@ export function SettingsModal({
       setError(periodWarning);
       return;
     }
+    if (periodRules.length === 0) {
+      setError("至少保留一条作息执行日期。");
+      return;
+    }
+    const ruleDates = new Set<string>();
+    for (const rule of periodRules) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(rule.from)) {
+        setError("请为每条作息规则选择一个有效日期。");
+        return;
+      }
+      if (ruleDates.has(rule.from)) {
+        setError("同一天只能设置一套作息。");
+        return;
+      }
+      if (!data.periodProfiles.some((profile) => profile.id === rule.profileId)) {
+        setError("有一条作息规则引用了不存在的作息方案。");
+        return;
+      }
+      ruleDates.add(rule.from);
+    }
+    const sortedPeriodRules = [...periodRules].sort((a, b) => a.from.localeCompare(b.from));
+
     const profilesForSave: PeriodProfile[] = data.periodProfiles.map((profile) => {
       const periods = profile.id === profileId ? draft.periods : profilePeriods[profile.id] ?? profile.periods;
       return {
@@ -245,6 +311,7 @@ export function SettingsModal({
       },
       profileId,
       profilesForSave,
+      sortedPeriodRules,
     );
   };
 
@@ -337,7 +404,7 @@ export function SettingsModal({
                 <ArrowUpRight size={15} />
                 GitHub
               </a>
-              <span>课序 v1.4.0</span>
+              <span>课序 v1.5.0</span>
             </div>
           </nav>
 
@@ -575,6 +642,60 @@ export function SettingsModal({
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="period-rule-section">
+                  <div className="profile-section-head">
+                    <div>
+                      <span className="field-label">从某天起执行哪套作息</span>
+                      <small className="field-hint">
+                        查看某一周时，按该周内日期选择方案；同一周内切换会整周采用新方案。
+                      </small>
+                    </div>
+                    <button className="secondary-button period-rule-add" type="button" onClick={addPeriodRule}>
+                      <Plus size={14} />
+                      添加日期
+                    </button>
+                  </div>
+                  <div className="period-rule-list">
+                    {periodRules.map((rule) => (
+                      <div className="period-rule-row" key={rule.id}>
+                        <span className="period-rule-prefix">从</span>
+                        <input
+                          className="field-input"
+                          type="date"
+                          value={rule.from}
+                          onChange={(event) => updatePeriodRule(rule.id, { from: event.target.value })}
+                          aria-label="作息开始日期"
+                        />
+                        <span className="period-rule-prefix">起使用</span>
+                        <select
+                          className="field-input period-rule-select"
+                          value={rule.profileId}
+                          onChange={(event) => updatePeriodRule(rule.id, { profileId: event.target.value })}
+                          aria-label="生效作息方案"
+                        >
+                          {data.periodProfiles.map((profile) => (
+                            <option key={profile.id} value={profile.id}>
+                              {profile.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          className="icon-button"
+                          type="button"
+                          onClick={() => removePeriodRule(rule.id)}
+                          disabled={periodRules.length <= 1}
+                          aria-label="删除这条作息规则"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="settings-note">
+                    第一条规则之前的时间使用当前课表的默认作息。
+                  </p>
                 </div>
 
                 <div className="period-count-row">

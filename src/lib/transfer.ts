@@ -2,6 +2,7 @@ import type { ScheduleData, Timetable } from "../types";
 import { dateKey, getDateForSlot, parseDateKey, timeToMinutes } from "./date";
 import { isHolidayDate } from "./holidays";
 import { isSlotActiveInWeek } from "./schedule";
+import { periodsForDate } from "./periods";
 import { normalizeSchedule } from "./storage";
 import { deliverTextFile, type ExportResult, type FileDelivery } from "./nativeFile";
 
@@ -109,10 +110,11 @@ export function buildIcs(
     for (const slot of course.slots) {
       for (let week = slot.weekStart; week <= slot.weekEnd; week += 1) {
         if (!isSlotActiveInWeek(slot, week)) continue;
-        const periodStart = semester.periods[slot.start - 1];
-        const periodEnd = semester.periods[slot.end - 1];
-        if (!periodStart || !periodEnd) continue;
         const date = getDateForSlot(semester.startDate, week, slot.day);
+        const periods = periodsForDate(active, data.periodProfiles, date);
+        const periodStart = periods[slot.start - 1];
+        const periodEnd = periods[slot.end - 1];
+        if (!periodStart || !periodEnd) continue;
         if (autoHolidays && isHolidayDate(date)) continue;
         const description = [
           course.name,

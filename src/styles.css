@@ -5359,6 +5359,171 @@ input[type="date"].field-input {
   height: 25px;
 }
 
+
+
+/* Whale theme atmosphere, inspired by the DSH Market visual mood. */
+html[data-theme="whale"] body {
+  background-image:
+    linear-gradient(112deg, transparent 31%, rgba(139, 224, 255, 0.045) 32%, transparent 34%),
+    linear-gradient(103deg, transparent 52%, rgba(139, 224, 255, 0.032) 53%, transparent 55%),
+    linear-gradient(78deg, transparent 69%, rgba(91, 140, 255, 0.055) 70%, transparent 72%),
+    radial-gradient(ellipse at 50% -15%, rgba(91, 140, 255, 0.36), transparent 55%),
+    radial-gradient(circle at 92% 8%, rgba(103, 216, 255, 0.15), transparent 25rem),
+    radial-gradient(circle at 52% 112%, rgba(49, 102, 177, 0.17), transparent 36rem),
+    radial-gradient(var(--dot) 0.8px, transparent 0.8px);
+  background-size: auto, auto, auto, auto, auto, auto, 20px 20px;
+}
+
+html[data-theme="whale"] .topbar {
+  background: color-mix(in srgb, #061322 82%, transparent);
+  border-bottom-color: rgba(117, 206, 255, 0.12);
+}
+
+html[data-theme="whale"] .board {
+  border-color: rgba(117, 206, 255, 0.15);
+  box-shadow:
+    0 20px 65px rgba(0, 5, 15, 0.45),
+    inset 0 1px 0 rgba(179, 235, 255, 0.06);
+}
+
+html[data-theme="whale"] .hero-title strong {
+  text-shadow: 0 0 32px rgba(103, 216, 255, 0.23);
+}
+
+html[data-theme="whale"] .week-switcher,
+html[data-theme="whale"] .view-switch,
+html[data-theme="whale"] .today-rail .panel {
+  border-color: rgba(117, 206, 255, 0.14);
+  background-color: rgba(9, 27, 47, 0.76);
+  backdrop-filter: blur(14px);
+}
+
+html[data-theme="whale"] .today-card {
+  border-color: rgba(124, 215, 255, 0.18);
+  background:
+    radial-gradient(circle at 86% 8%, rgba(91, 140, 255, 0.45), transparent 54%),
+    radial-gradient(circle at 10% 100%, rgba(72, 180, 235, 0.18), transparent 60%),
+    linear-gradient(145deg, #103254, #061422 72%);
+  box-shadow:
+    0 20px 60px rgba(0, 5, 16, 0.42),
+    inset 0 1px 0 rgba(191, 240, 255, 0.08);
+}
+
+html[data-theme="whale"] .whale-note {
+  border-color: rgba(124, 215, 255, 0.24);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(103, 216, 255, 0.15), transparent 70%),
+    linear-gradient(135deg, rgba(14, 48, 78, 0.9), rgba(5, 18, 33, 0.86));
+  box-shadow:
+    0 12px 34px rgba(0, 5, 15, 0.28),
+    inset 0 1px 0 rgba(180, 236, 255, 0.08);
+}
+
+html[data-theme="whale"] .whale-note::before {
+  position: absolute;
+  top: -35px;
+  right: -28px;
+  width: 92px;
+  height: 92px;
+  content: "";
+  border: 1px solid rgba(139, 228, 255, 0.12);
+  border-radius: 50%;
+  box-shadow: 0 0 0 14px rgba(139, 228, 255, 0.035);
+  pointer-events: none;
+}
+
+html[data-theme="whale"] .whale-note .whale-mascot {
+  width: 58px;
+  height: 58px;
+  filter: drop-shadow(0 4px 12px rgba(48, 178, 255, 0.25));
+}
+
+html[data-theme="whale"] .whale-note strong {
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+}
+
+.topbar-whale {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  margin-right: -3px;
+  filter: drop-shadow(0 3px 9px rgba(91, 140, 255, 0.3));
+}
+
+.topbar-whale .whale-mascot {
+  width: 28px;
+  height: 28px;
+}
+
+/* Date-based 作息 rules */
+.period-rule-section {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 18px 0 2px;
+  padding-top: 17px;
+  border-top: 1px solid var(--line);
+}
+
+.period-rule-section .profile-section-head {
+  align-items: flex-start;
+}
+
+.period-rule-add {
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.period-rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.period-rule-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.period-rule-prefix {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.period-rule-row .field-input {
+  min-height: 29px;
+  height: 29px;
+  font-size: 9px;
+}
+
+.period-rule-row input[type="date"] {
+  width: 132px;
+  flex: 0 0 132px;
+}
+
+.period-rule-select {
+  min-width: 0;
+  flex: 1;
+}
+
+.period-rule-row .icon-button {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 auto;
+}
+
 /* Course weeks + same-course merge */
 .slot-editor-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -6270,6 +6435,16 @@ html[data-theme="whale"] .week-pick.is-selected span {
 
   .theme-choice-grid {
     grid-template-columns: 1fr;
+  }
+
+  .topbar-whale {
+    width: 24px;
+    height: 24px;
+  }
+
+  .topbar-whale .whale-mascot {
+    width: 24px;
+    height: 24px;
   }
 
   .theme-picker-head {

@@ -1,3 +1,4 @@
+import { normalizePeriodRules } from "./periods";
 import type {
   Course,
   CourseSlot,
@@ -287,6 +288,12 @@ function normalizeTimetable(
     name: text(value.name, 60) || (index === 0 ? "我的课表" : `课表 ${index + 1}`),
     semester,
     periodProfileId: profile?.id ?? null,
+    periodRules: normalizePeriodRules(
+      value.periodRules,
+      profiles,
+      semester.startDate,
+      profile?.id ?? null,
+    ),
     courses,
     events,
     wallpaper: normalizeWallpaper(value.wallpaper),
@@ -323,6 +330,7 @@ function normalizeLegacyTimetable(candidate: Record<string, unknown>): Timetable
     name: "我的课表",
     semester,
     periodProfileId: standard?.id ?? profiles[0].id,
+    periodRules: normalizePeriodRules([], profiles, semester.startDate, standard?.id ?? profiles[0].id),
     courses,
     events: [],
     wallpaper: createDefaultWallpaper(),
