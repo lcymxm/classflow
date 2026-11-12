@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
-import { CalendarPlus, Plus, Sparkles } from "lucide-react";
-import type { Course, LaidOutSession, Semester } from "../types";
+import { CalendarDays, CalendarPlus, Plus, Sparkles } from "lucide-react";
+import type {
+  Course,
+  LaidOutSession,
+  ScheduleEvent,
+  Session,
+  Semester,
+} from "../types";
 import { toneColor } from "../types";
 import {
-  daysForSemester,
   formatWeeks,
   getPeriodNowProgress,
   groupSessionsByDay,
-  buildSessions,
 } from "../lib/schedule";
 import { getWeekdayNumber, WEEKDAYS } from "../lib/date";
+import type { CalendarDayInfo } from "../lib/holidays";
 
 const ROW_HEIGHT = 58;
 
@@ -19,18 +24,25 @@ interface TimetableProps {
   week: number;
   currentWeek: number;
   dates: Date[];
+  days: number[];
   courses: Course[];
+  sessions: Session[];
+  dayStatuses: Record<number, CalendarDayInfo | null>;
+  eventCounts: Record<number, number>;
+  weekEvents: ScheduleEvent[];
+  calendarSummary: { holidays: string[]; workdays: string[] };
   now: Date;
   onSelectCourse: (course: Course) => void;
+  onSelectEvent: (event: ScheduleEvent) => void;
   onAddAt: (day: number, start: number) => void;
   onAddCourse: () => void;
 }
 
 function courseBlockStyle(session: LaidOutSession): CSSProperties {
-  const top = (session.start - 1) * ROW_HEIGHT + 4;
-  const height = (session.end - session.start + 1) * ROW_HEIGHT - 8;
-  const left = `calc(${(session.column / session.columns) * 100}% + 4px)`;
-  const width = `calc(${100 / session.columns}% - 8px)`;
+  const top = (session.start - 1) * ROW_HEIGHT + 2;
+  const height = (session.end - session.start + 1) * ROW_HEIGHT - 4;
+  const left = `calc(${(session.column / session.columns) * 100}% + 3px)`;
+  const width = `calc(${100 / session.columns}% - 6px)`;
   return {
     top,
     height,
@@ -45,15 +57,20 @@ export function Timetable({
   week,
   currentWeek,
   dates,
+  days,
   courses,
+  sessions,
+  dayStatuses,
+  eventCounts,
+  weekEvents,
+  calendarSummary,
   now,
   onSelectCourse,
+  onSelectEvent,
   onAddAt,
   onAddCourse,
 }: TimetableProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const days = useMemo(() => daysForSemester(semester.showWeekends), [semester.showWeekends]);
-  const sessions = useMemo(() => buildSessions(courses, week), [courses, week]);
   const byDay = useMemo(() => groupSessionsByDay(sessions), [sessions]);
   const todayNumber = getWeekdayNumber(now);
   const showNow = week === currentWeek && days.includes(todayNumber);
@@ -61,6 +78,7 @@ export function Timetable({
   const nowTop = nowProgress
     ? (nowProgress.period - 1 + nowProgress.fraction) * ROW_HEIGHT
     : null;
+  const hasEvents = Object.values(eventCounts).some((count) => count > 0);
 
   useEffect(() => {
     const scroller = scrollRef.current;
@@ -73,7 +91,7 @@ export function Timetable({
     scroller.scrollTo({ left: target, behavior: "smooth" });
   }, [week, currentWeek, days, todayNumber]);
 
-  if (courses.length === 0) {
+  if (courses.length === 0 && !hasEvents) {
     return (
       <div className="blank-board">
         <span className="blank-board-icon">
@@ -81,7 +99,7 @@ export function Timetable({
         </span>
         <p className="eyebrow">A FRESH START</p>
         <h3>课表还是空的</h3>
-        <p>把第一门课放进来，这一周就开始有形状了。</p>
+        <p>先把学期和作息调好，再把第一门课放进来。</p>
         <button className="primary-button" type="button" onClick={onAddCourse}>
           <Plus size={16} />
           添加第一门课
@@ -92,10 +110,63 @@ export function Timetable({
 
   return (
     <div className="timetable-zone">
+      {calendarSummary.holidays.length > 0 || calendarSummary.workdays.length > 0 ? (
+        <div className="calendar-strip">
+          <CalendarDays size={15} />
+          <div>
+            {calendarSummary.holidays.length > 0 ? (
+              <span>
+                <strong>{calendarSummary.holidays.join("、")}</strong> 放假，假期课程已自动隐藏。
+              </span>
+            ) : null}
+            {calendarSummary.workdays.length > 0 ? (
+              <span className="calendar-strip-workday">
+                调休上班：{calendarSummary.workdays.join("、")}，周末仍会显示。
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {weekEvents.length > 0 ? (
+        <div className="week-event-strip">
+          <div className="week-event-strip-head">
+            <CalendarDays size={14} />
+            <span>本周日程</span>
+            <em>{weekEvents.length}</em>
+          </div>
+          <div className="week-event-chips">
+            {weekEvents.map((event) => {
+              const [, month, date] = event.date.split("-");
+              return (
+                <button
+                  className="week-event-chip"
+                  type="button"
+                  key={event.id}
+                  style={{ "--tone": toneColor(event.tone) } as CSSProperties}
+                  onClick={() => onSelectEvent(event)}
+                >
+                  <span className="week-event-chip-dot" />
+                  <span className="week-event-chip-date">{Number(month)}/{Number(date)}</span>
+                  <span className="week-event-chip-title">{event.title}</span>
+                  <span className="week-event-chip-time">
+                    {event.allDay ? "全天" : event.start}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
       {sessions.length === 0 ? (
         <div className="week-empty">
           <CalendarPlus size={16} />
-          <span>这一周还没有课。可能是课程不在本周的周次内，点空白格也可以直接添加。</span>
+          <span>
+            {calendarSummary.holidays.length > 0
+              ? "本周有法定节假日，相关课程已自动隐藏。"
+              : "这一周还没有课。可能是课程不在本周的周次内，点空白格也可以直接添加。"}
+          </span>
         </div>
       ) : null}
 
@@ -118,13 +189,30 @@ export function Timetable({
               const info = WEEKDAYS[day - 1];
               const date = dates[day - 1];
               const isToday = showNow && day === todayNumber;
+              const status = dayStatuses[day] ?? null;
+              const eventCount = eventCounts[day] ?? 0;
               return (
-                <div className={`tt-day-head ${isToday ? "is-today" : ""}`} key={day}>
+                <div
+                  className={`tt-day-head ${isToday ? "is-today" : ""} ${
+                    status ? `is-${status.kind}` : ""
+                  }`}
+                  key={day}
+                  title={status ? status.name : undefined}
+                >
+                  {status ? (
+                    <span className={`day-status-tag is-${status.kind}`}>{status.short}</span>
+                  ) : null}
                   <span className="day-en">{info.en}</span>
                   <span className="day-label">{info.label}</span>
                   <span className="day-date">
                     {date ? `${date.getMonth() + 1}/${date.getDate()}` : ""}
                   </span>
+                  {eventCount > 0 ? (
+                    <span className="day-event-count" title={`${eventCount} 条日程`}>
+                      <CalendarDays size={9} />
+                      {eventCount}
+                    </span>
+                  ) : null}
                   {isToday ? <span className="day-now-dot" aria-label="今天" /> : null}
                 </div>
               );
@@ -148,21 +236,39 @@ export function Timetable({
             >
               {days.map((day) => {
                 const isToday = showNow && day === todayNumber;
+                const status = dayStatuses[day] ?? null;
+                const holiday = status?.kind === "holiday";
                 return (
-                  <div className={`tt-col ${isToday ? "is-today" : ""}`} key={day}>
+                  <div
+                    className={`tt-col ${isToday ? "is-today" : ""} ${
+                      status ? `is-${status.kind}` : ""
+                    }`}
+                    key={day}
+                  >
                     {semester.periods.map((period) => (
                       <button
                         className="tt-slot"
                         type="button"
                         key={period.index}
                         onClick={() => onAddAt(day, period.index)}
-                        aria-label={`${WEEKDAYS[day - 1].label}第 ${period.index} 节，添加课程`}
+                        disabled={holiday}
+                        aria-label={
+                          holiday
+                            ? `${WEEKDAYS[day - 1].label}第 ${period.index} 节，法定节假日`
+                            : `${WEEKDAYS[day - 1].label}第 ${period.index} 节，添加课程`
+                        }
                       >
-                        <span className="tt-slot-plus">
-                          <Plus size={12} />
-                        </span>
+                        {!holiday ? (
+                          <span className="tt-slot-plus">
+                            <Plus size={12} />
+                          </span>
+                        ) : null}
                       </button>
                     ))}
+
+                    {holiday ? (
+                      <span className="holiday-column-label">{status.name}</span>
+                    ) : null}
 
                     {byDay[day].map((session) => {
                       const duration = session.end - session.start + 1;
@@ -174,7 +280,9 @@ export function Timetable({
                       const conflict = session.columns > 1;
                       return (
                         <button
-                          className={`course-block ${ongoing ? "is-ongoing" : ""} ${conflict ? "is-conflict" : ""}`}
+                          className={`course-block ${ongoing ? "is-ongoing" : ""} ${
+                            conflict ? "is-conflict" : ""
+                          }`}
                           type="button"
                           style={courseBlockStyle(session)}
                           key={session.id}
@@ -183,7 +291,11 @@ export function Timetable({
                         >
                           <span className="course-block-top">
                             <span className="course-block-name">{session.course.name}</span>
-                            {conflict ? <span className="conflict-mark" title="时间冲突">!</span> : null}
+                            {conflict ? (
+                              <span className="conflict-mark" title="时间冲突">
+                                !
+                              </span>
+                            ) : null}
                             {ongoing && !conflict ? <span className="live-dot" /> : null}
                           </span>
                           {duration > 1 ? (

@@ -70,8 +70,9 @@ describe("schedule rules", () => {
 
   it("builds only sessions active in a given week", () => {
     const data = createDemoSchedule(new Date(2026, 10, 12));
-    const weekNine = buildSessions(data.courses, 9);
-    const weekTen = buildSessions(data.courses, 10);
+    const timetable = data.timetables[0];
+    const weekNine = buildSessions(timetable.courses, 9);
+    const weekTen = buildSessions(timetable.courses, 10);
     expect(weekTen.length).toBeGreaterThan(0);
     expect(weekTen.some((item) => item.course.id === "demo-physics-lab")).toBe(false);
     expect(weekTen.some((item) => item.course.id === "demo-policy")).toBe(true);
@@ -80,8 +81,9 @@ describe("schedule rules", () => {
 
   it("computes weekly stats", () => {
     const data = createDemoSchedule(new Date(2026, 10, 12));
-    const sessions = buildSessions(data.courses, 10);
-    const stats = getWeekStats(sessions, data.semester.periods);
+    const timetable = data.timetables[0];
+    const sessions = buildSessions(timetable.courses, 10);
+    const stats = getWeekStats(sessions, timetable.semester.periods);
     expect(stats.courseCount).toBe(7);
     expect(stats.sessionCount).toBe(10);
     expect(stats.minutes).toBeGreaterThan(0);
@@ -93,19 +95,21 @@ describe("schedule rules", () => {
       "第 1–16 周 · 单周",
     );
     const data = createDemoSchedule(new Date(2026, 10, 12));
-    const sessions = buildSessions(data.courses, 10);
-    const dates = getWeekDates(data.semester.startDate, 10);
+    const timetable = data.timetables[0];
+    const sessions = buildSessions(timetable.courses, 10);
+    const dates = getWeekDates(timetable.semester.startDate, 10);
     const now = new Date(2026, 10, 12, 12, 0);
-    const next = getNextSession(sessions, dates, data.semester.periods, now);
+    const next = getNextSession(sessions, dates, timetable.semester.periods, now);
     expect(next?.session.course.name).toBe("数据结构与算法");
     expect(next ? dateKey(next.date) : "").toBe("2026-11-12");
   });
 
   it("finds the current period and max used period", () => {
     const data = createDemoSchedule(new Date(2026, 10, 12));
-    expect(getPeriodNowProgress(data.semester.periods, new Date(2026, 10, 12, 8, 10))).toMatchObject({
+    const timetable = data.timetables[0];
+    expect(getPeriodNowProgress(timetable.semester.periods, new Date(2026, 10, 12, 8, 10))).toMatchObject({
       period: 1,
     });
-    expect(getUsedMaxPeriod(data.courses)).toBe(10);
+    expect(getUsedMaxPeriod(timetable.courses)).toBe(10);
   });
 });

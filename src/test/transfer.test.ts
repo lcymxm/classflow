@@ -6,7 +6,7 @@ import { normalizeSchedule } from "../lib/storage";
 describe("calendar export", () => {
   it("creates one calendar event per active session and escapes fields", () => {
     const data = createDemoSchedule(new Date(2026, 10, 12));
-    data.courses[0].location = "教一 401, 东侧";
+    data.timetables[0].courses[0].location = "教一 401, 东侧";
     const { content, count } = buildIcs(data);
     expect(count).toBeGreaterThan(20);
     expect(content).toContain("BEGIN:VCALENDAR\r\n");
@@ -18,26 +18,22 @@ describe("calendar export", () => {
 });
 
 describe("import normalization", () => {
-  it("accepts an exported envelope and strips demo flag", () => {
+  it("accepts an exported v2 envelope", () => {
     const data = createDemoSchedule(new Date(2026, 10, 12));
-    const normalized = normalizeSchedule({ data }, false);
-    expect(normalized?.courses).toHaveLength(8);
-    expect(normalized?.isDemo).toBe(false);
-    expect(normalized?.semester.startDate).toBe(data.semester.startDate);
+    const normalized = normalizeSchedule({ data });
+    expect(normalized?.timetables[0].courses).toHaveLength(8);
+    expect(normalized?.timetables[0].semester.startDate).toBe(data.timetables[0].semester.startDate);
   });
 
   it("drops invalid slots and invalid courses", () => {
-    const normalized = normalizeSchedule(
-      {
-        semester: { name: "测试", startDate: "2026-09-07", totalWeeks: 16 },
-        courses: [
-          { id: "ok", name: "好课", slots: [{ day: 1, start: 1, end: 2 }] },
-          { id: "bad", name: "", slots: [{ day: 1, start: 1, end: 2 }] },
-          { id: "no-slots", name: "空课", slots: [] },
-        ],
-      },
-      false,
-    );
-    expect(normalized?.courses.map((course) => course.id)).toEqual(["ok"]);
+    const normalized = normalizeSchedule({
+      semester: { name: "测试", startDate: "2026-09-07", totalWeeks: 16 },
+      courses: [
+        { id: "ok", name: "好课", slots: [{ day: 1, start: 1, end: 2 }] },
+        { id: "bad", name: "", slots: [{ day: 1, start: 1, end: 2 }] },
+        { id: "no-slots", name: "空课", slots: [] },
+      ],
+    });
+    expect(normalized?.timetables[0].courses.map((course) => course.id)).toEqual(["ok"]);
   });
 });

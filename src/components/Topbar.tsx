@@ -1,27 +1,33 @@
-import { Menu, Moon, Plus, Settings2, Sun } from "lucide-react";
+import { CalendarPlus, Menu, Moon, Plus, Settings2, Sun } from "lucide-react";
 import type { AppPage, Theme } from "../types";
 
 interface TopbarProps {
   page: AppPage;
+  timetableName: string;
   semesterName: string;
   week: number;
   theme: Theme;
   storageOk: boolean;
   onOpenMenu: () => void;
   onAddCourse: () => void;
+  onAddEvent: () => void;
   onOpenSettings: () => void;
+  onManageTimetables: () => void;
   onToggleTheme: () => void;
 }
 
 export function Topbar({
   page,
+  timetableName,
   semesterName,
   week,
   theme,
   storageOk,
   onOpenMenu,
   onAddCourse,
+  onAddEvent,
   onOpenSettings,
+  onManageTimetables,
   onToggleTheme,
 }: TopbarProps) {
   return (
@@ -31,7 +37,14 @@ export function Topbar({
       </button>
 
       <div className="breadcrumb">
-        <span className="breadcrumb-term">{semesterName}</span>
+        <button
+          className="breadcrumb-term breadcrumb-button"
+          type="button"
+          onClick={onManageTimetables}
+          title={`${semesterName} · 管理课表`}
+        >
+          {timetableName}
+        </button>
         <span className="breadcrumb-slash">/</span>
         <span>{page === "timetable" ? "周课表" : "课程库"}</span>
         {page === "timetable" ? <span className="breadcrumb-week">第 {week} 周</span> : null}
@@ -47,6 +60,15 @@ export function Topbar({
         </button>
         <button className="icon-button" type="button" onClick={onOpenSettings} aria-label="打开设置">
           <Settings2 size={18} />
+        </button>
+        <button
+          className="icon-button topbar-event"
+          type="button"
+          onClick={onAddEvent}
+          aria-label="添加日程"
+          title="添加日程（E）"
+        >
+          <CalendarPlus size={18} />
         </button>
         <button className="primary-button topbar-add" type="button" onClick={onAddCourse}>
           <Plus size={16} strokeWidth={2.2} />

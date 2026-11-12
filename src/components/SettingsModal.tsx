@@ -8,12 +8,11 @@ import {
   Database,
   Download,
   Printer,
-  RotateCcw,
   Trash2,
   Upload,
 } from "lucide-react";
 import type { FormEvent } from "react";
-import type { ImportResult, Period, ScheduleData, Semester } from "../types";
+import type { ImportResult, Period, PeriodProfile, ScheduleData, Semester } from "../types";
 import { Modal } from "./Modal";
 import {
   MAX_PERIODS,
@@ -34,14 +33,15 @@ type SettingsTab = "term" | "periods" | "data";
 
 interface SettingsModalProps {
   data: ScheduleData;
+  autoHolidays: boolean;
   onClose: () => void;
-  onSaveSemester: (semester: Semester) => void;
+  onSaveSemester: (semester: Semester, periodProfileId: string | null) => void;
   onExportJson: () => Promise<ExportResult>;
   onExportIcs: () => Promise<ExportResult & { count: number }>;
   onImportFile: (file: File) => Promise<ImportResult>;
   onPrint: () => void;
-  onResetDemo: () => void;
   onClearData: () => void;
+  onToggleAutoHolidays: (value: boolean) => void;
 }
 
 interface Notice {
@@ -62,8 +62,9 @@ function deliveryMessage(delivery: ExportResult["delivery"], filename: string): 
 }
 
 function usedMaxWeek(data: ScheduleData): number {
+  const active = data.timetables.find((item) => item.id === data.activeTimetableId) ?? data.timetables[0];
   let max = 0;
-  for (const course of data.courses) {
+  for (const course of active?.courses ?? []) {
     for (const slot of course.slots) max = Math.max(max, slot.weekEnd);
   }
   return max;
@@ -71,25 +72,28 @@ function usedMaxWeek(data: ScheduleData): number {
 
 export function SettingsModal({
   data,
+  autoHolidays,
   onClose,
   onSaveSemester,
   onExportJson,
   onExportIcs,
   onImportFile,
   onPrint,
-  onResetDemo,
   onClearData,
+  onToggleAutoHolidays,
 }: SettingsModalProps) {
+  const active = data.timetables.find((item) => item.id === data.activeTimetableId) ?? data.timetables[0];
   const [tab, setTab] = useState<SettingsTab>("term");
   const [draft, setDraft] = useState<Semester>(() => ({
-    ...data.semester,
-    periods: data.semester.periods.map((period) => ({ ...period })),
+    ...active.semester,
+    periods: active.semester.periods.map((period) => ({ ...period })),
   }));
+  const [profileId, setProfileId] = useState<string | null>(active.periodProfileId);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const native = isNativeApp();
-  const maxPeriod = getUsedMaxPeriod(data.courses);
+  const maxPeriod = getUsedMaxPeriod(active.courses);
   const maxWeek = usedMaxWeek(data);
   const periodWarning =
     maxPeriod > draft.periods.length
@@ -102,14 +106,30 @@ export function SettingsModal({
 
   const setPeriodCount = (count: number) => {
     setError("");
+    setProfileId(null);
     setDraft((current) => ({
       ...current,
       periods: resizePeriods(current.periods, count),
     }));
   };
 
+  const applyProfile = (profile: PeriodProfile) => {
+    if (maxPeriod > profile.periods.length) {
+      setError(`已有课程上到第 ${maxPeriod} 节，「${profile.name}」只有 ${profile.periods.length} 节，无法应用。`);
+      return;
+    }
+    setError("");
+    setProfileId(profile.id);
+    setDraft((current) => ({
+      ...current,
+      periods: profile.periods.map((period) => ({ ...period })),
+    }));
+    setNotice({ tone: "info", message: `已载入「${profile.name}」，保存后应用到当前课表。` });
+  };
+
   const updatePeriod = (index: number, patch: Partial<Period>) => {
     setError("");
+    setProfileId(null);
     setDraft((current) => ({
       ...current,
       periods: current.periods.map((period) =>
@@ -140,11 +160,14 @@ export function SettingsModal({
       setError(`第 ${invalidPeriod.index} 节的结束时间需要晚于开始时间。`);
       return;
     }
-    onSaveSemester({
-      ...draft,
-      name,
-      periods: draft.periods.map((period, index) => ({ ...period, index: index + 1 })),
-    });
+    onSaveSemester(
+      {
+        ...draft,
+        name,
+        periods: draft.periods.map((period, index) => ({ ...period, index: index + 1 })),
+      },
+      profileId,
+    );
   };
 
   const handleExportJson = async () => {
@@ -198,7 +221,7 @@ export function SettingsModal({
       onClose={onClose}
       footer={
         <>
-          <p className="modal-foot-note">所有内容只保存在当前浏览器</p>
+          <p className="modal-foot-note">所有内容只保存在本机</p>
           <span className="modal-foot-spacer" />
           <button className="secondary-button" type="button" onClick={onClose}>
             取消
@@ -236,7 +259,7 @@ export function SettingsModal({
                 <ArrowUpRight size={15} />
                 GitHub
               </a>
-              <span>课序 v1.0.0</span>
+              <span>课序 v1.1.0</span>
             </div>
           </nav>
 
@@ -311,7 +334,7 @@ export function SettingsModal({
                 <label className="toggle-row">
                   <span>
                     <strong>显示周末</strong>
-                    <small>关闭后只显示周一至周五，周末课程仍会保留。</small>
+                    <small>关闭后只显示周一至周五；遇到调休周末仍会自动出现。</small>
                   </span>
                   <input
                     type="checkbox"
@@ -319,6 +342,19 @@ export function SettingsModal({
                     onChange={(event) =>
                       setDraft((current) => ({ ...current, showWeekends: event.target.checked }))
                     }
+                  />
+                  <span className="switch" aria-hidden="true" />
+                </label>
+
+                <label className="toggle-row">
+                  <span>
+                    <strong>自动识别节假日与调休</strong>
+                    <small>内置 2026–2027 年中国法定节假日；修改立即生效。放假日的课程会自动隐藏，调休日会标「班」。</small>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={autoHolidays}
+                    onChange={(event) => onToggleAutoHolidays(event.target.checked)}
                   />
                   <span className="switch" aria-hidden="true" />
                 </label>
@@ -337,6 +373,39 @@ export function SettingsModal({
                   <p className="eyebrow">DAILY RHYTHM</p>
                   <h3>作息时间</h3>
                   <p>设定每天有几节课，以及每一节的上下课时间。</p>
+                </div>
+
+                <div className="profile-section">
+                  <div className="profile-section-head">
+                    <div>
+                      <span className="field-label">作息方案</span>
+                      <small className="field-hint">选择一套现成的时间表，保存后应用到当前课表。</small>
+                    </div>
+                    <span className="profile-current">
+                      {profileId
+                        ? data.periodProfiles.find((profile) => profile.id === profileId)?.name ?? "自定义"
+                        : "自定义"}
+                    </span>
+                  </div>
+                  <div className="profile-grid">
+                    {data.periodProfiles.map((profile) => (
+                      <button
+                        key={profile.id}
+                        className={`profile-card ${profileId === profile.id ? "is-active" : ""}`}
+                        type="button"
+                        onClick={() => applyProfile(profile)}
+                        aria-pressed={profileId === profile.id}
+                      >
+                        <span className="profile-card-top">
+                          <strong>{profile.name}</strong>
+                          {profileId === profile.id ? <Check size={14} /> : null}
+                        </span>
+                        <span className="profile-card-meta">
+                          {profile.periods.length} 节 · 第 1 节 {profile.periods[0]?.start} 开始
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="period-count-row">
@@ -413,8 +482,8 @@ export function SettingsModal({
                       <Download size={18} />
                     </span>
                     <span>
-                      <strong>导出课表备份</strong>
-                      <small>JSON · 包含学期、课程与所有时间设置</small>
+                      <strong>导出全部课表备份</strong>
+                      <small>JSON · 包含所有课表、课程、日程与作息</small>
                     </span>
                   </button>
                   <button
@@ -426,8 +495,8 @@ export function SettingsModal({
                       <CalendarRange size={18} />
                     </span>
                     <span>
-                      <strong>导出日历</strong>
-                      <small>ICS · 导入 Google / Apple / Outlook 日历</small>
+                      <strong>导出当前课表日历</strong>
+                      <small>ICS · 只导出当前课表的课程和日程</small>
                     </span>
                   </button>
                   <button
@@ -483,13 +552,9 @@ export function SettingsModal({
                 <div className="danger-zone">
                   <div>
                     <h4>重新开始</h4>
-                    <p>恢复会覆盖当前课表，建议先导出备份。</p>
+                    <p>清空所有课表、课程、日程与壁纸，建议先导出备份。</p>
                   </div>
                   <div className="danger-actions">
-                    <button className="secondary-button" type="button" onClick={onResetDemo}>
-                      <RotateCcw size={14} />
-                      恢复示例课表
-                    </button>
                     <button className="danger-ghost-button" type="button" onClick={onClearData}>
                       <Trash2 size={14} />
                       清空全部数据

@@ -1,27 +1,47 @@
-import { CalendarDays, ChevronRight, Clock, MapPin, Plus, User } from "lucide-react";
-import type { CSSProperties } from "react";
-import type { Course, Period, Semester, Session } from "../types";
-import { toneColor } from "../types";
-import { buildSessions, formatWeeks, sessionsForDay } from "../lib/schedule";
 import {
-  getWeekdayNumber,
-  WEEKDAYS,
+  CalendarDays,
+  CalendarPlus,
+  ChevronRight,
+  Clock,
+  MapPin,
+  Plus,
+  User,
+} from "lucide-react";
+import type { CSSProperties } from "react";
+import type {
+  Period,
+  ScheduleEvent,
+  Semester,
+  Session,
+} from "../types";
+import { toneColor } from "../types";
+import type { CalendarDayInfo } from "../lib/holidays";
+import {
+  dateKey,
   formatMonthDay,
+  getWeekdayNumber,
   isSameDay,
   timeToMinutes,
+  WEEKDAYS,
 } from "../lib/date";
+import { formatWeeks } from "../lib/schedule";
 
 interface DayViewProps {
   semester: Semester;
   week: number;
   currentWeek: number;
   dates: Date[];
-  courses: Course[];
+  days: number[];
+  sessions: Session[];
+  events: ScheduleEvent[];
+  dayStatuses: Record<number, CalendarDayInfo | null>;
   selectedDay: number;
   now: Date;
   onSelectDay: (day: number) => void;
-  onSelectCourse: (course: Course) => void;
+  onSelectCourse: (course: Session["course"]) => void;
   onAddAt: (day: number, start: number) => void;
+  onAddEvent: (date: string) => void;
+  onSelectEvent: (event: ScheduleEvent) => void;
 }
 
 function sessionTime(session: Session, periods: Period[]): string {
@@ -44,19 +64,33 @@ export function DayView({
   week,
   currentWeek,
   dates,
-  courses,
+  days,
+  sessions,
+  events,
+  dayStatuses,
   selectedDay,
   now,
   onSelectDay,
   onSelectCourse,
   onAddAt,
+  onAddEvent,
+  onSelectEvent,
 }: DayViewProps) {
-  const visibleDays = semester.showWeekends ? WEEKDAYS : WEEKDAYS.slice(0, 5);
-  const day = visibleDays.some((item) => item.index === selectedDay) ? selectedDay : visibleDays[0].index;
-  const sessions = sessionsForDay(buildSessions(courses, week), day);
+  const visibleDays = days.map((index) => WEEKDAYS[index - 1]);
+  const day = visibleDays.some((item) => item.index === selectedDay)
+    ? selectedDay
+    : visibleDays[0]?.index ?? 1;
+  const daySessions = sessions.filter((session) => session.day === day);
   const date = dates[day - 1];
   const today = getWeekdayNumber(now);
   const isToday = week === currentWeek && day === today;
+  const holiday = dayStatuses[day] ?? null;
+  const dayEvents = events
+    .filter((event) => !date || event.date === dateKey(date))
+    .sort((a, b) => {
+      if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
+      return a.start.localeCompare(b.start);
+    });
 
   return (
     <div className="day-view">
@@ -65,14 +99,20 @@ export function DayView({
           const dayDate = dates[item.index - 1];
           const active = item.index === day;
           const todayMark = week === currentWeek && item.index === today;
+          const status = dayStatuses[item.index];
           return (
             <button
               key={item.index}
-              className={`day-tab ${active ? "is-active" : ""} ${todayMark ? "is-today" : ""}`}
+              className={`day-tab ${active ? "is-active" : ""} ${
+                todayMark ? "is-today" : ""
+              } ${status ? `is-${status.kind}` : ""}`}
               type="button"
               aria-pressed={active}
               onClick={() => onSelectDay(item.index)}
             >
+              {status ? (
+                <span className={`day-tab-flag is-${status.kind}`}>{status.short}</span>
+              ) : null}
               <span className="day-tab-en">{item.en}</span>
               <strong>{item.short}</strong>
               <span className="day-tab-date">{dayDate ? dayDate.getDate() : ""}</span>
@@ -92,34 +132,70 @@ export function DayView({
             {date ? <span>{formatMonthDay(date)}</span> : null}
           </h2>
           <p className="day-summary-meta">
-            {sessions.length > 0
-              ? `${sessions.length} 节课 · 从 ${sessionTime(sessions[0], semester.periods).split(" – ")[0]} 开始`
-              : "这一天暂时没有课。"}
+            {holiday
+              ? `${holiday.name} · ${holiday.kind === "holiday" ? "放假，课程已自动隐藏" : "调休上班"}`
+              : daySessions.length > 0
+                ? `${daySessions.length} 节课 · 从 ${sessionTime(daySessions[0], semester.periods).split(" – ")[0]} 开始`
+                : "这一天暂时没有课。"}
           </p>
         </div>
-        <button className="secondary-button" type="button" onClick={() => onAddAt(day, 1)}>
-          <Plus size={15} />
-          在这天加课
-        </button>
+        <div className="day-summary-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => date && onAddEvent(dateKey(date))}
+          >
+            <CalendarPlus size={15} />
+            添加日程
+          </button>
+          {!holiday ? (
+            <button className="secondary-button" type="button" onClick={() => onAddAt(day, 1)}>
+              <Plus size={15} />
+              在这天加课
+            </button>
+          ) : null}
+        </div>
       </div>
 
-      {sessions.length === 0 ? (
-        <div className="day-empty">
+      {holiday ? (
+        <div className={`day-holiday-banner is-${holiday.kind}`}>
+          <CalendarDays size={17} />
+          <div>
+            <strong>{holiday.name}</strong>
+            <span>
+              {holiday.kind === "holiday"
+                ? "这一天按法定节假日处理，课程不会显示。"
+                : "调休工作日，周末照常显示。"}
+            </span>
+          </div>
+        </div>
+      ) : null}
+
+      {daySessions.length === 0 ? (
+        <div className={`day-empty ${dayEvents.length > 0 ? "has-events" : ""}`}>
           <span className="day-empty-icon">
             <CalendarDays size={22} />
           </span>
-          <h3>{isToday ? "今天没有课" : "这一天是空的"}</h3>
-          <p>{isToday ? "可以慢一点，也可以给自己加一节课。" : "留白也是一种安排。"}</p>
-          <div className="button-row">
-            <button className="primary-button" type="button" onClick={() => onAddAt(day, 1)}>
-              <Plus size={16} />
-              在这天加课
-            </button>
-          </div>
+          <h3>{holiday?.kind === "holiday" ? "假期快乐" : isToday ? "今天没有课" : "这一天是空的"}</h3>
+          <p>
+            {holiday?.kind === "holiday"
+              ? "不用赶课，给自己留一点时间。"
+              : isToday
+                ? "可以慢一点，也可以给自己加一节课。"
+                : "留白也是一种安排。"}
+          </p>
+          {!holiday ? (
+            <div className="button-row">
+              <button className="primary-button" type="button" onClick={() => onAddAt(day, 1)}>
+                <Plus size={16} />
+                在这天加课
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="day-list">
-          {sessions.map((session) => {
+          {daySessions.map((session) => {
             const ongoing = isOngoing(session, semester.periods, date, now);
             const start = semester.periods[session.start - 1]?.start ?? "";
             const end = semester.periods[session.end - 1]?.end ?? "";
@@ -168,6 +244,48 @@ export function DayView({
           })}
         </div>
       )}
+
+      <section className="day-events" aria-label="当天日程">
+        <div className="day-section-head">
+          <div>
+            <p className="eyebrow">PERSONAL PLAN</p>
+            <h3>当天日程</h3>
+          </div>
+          <button
+            className="text-button"
+            type="button"
+            onClick={() => date && onAddEvent(dateKey(date))}
+          >
+            <Plus size={13} />
+            添加日程
+          </button>
+        </div>
+        {dayEvents.length > 0 ? (
+          <div className="day-event-list">
+            {dayEvents.map((event) => (
+              <button
+                className="day-event"
+                type="button"
+                key={event.id}
+                style={{ "--tone": toneColor(event.tone) } as CSSProperties}
+                onClick={() => onSelectEvent(event)}
+              >
+                <span className="day-event-time">
+                  {event.allDay ? "全天" : event.start}
+                </span>
+                <span className="day-event-dot" aria-hidden="true" />
+                <span className="day-event-copy">
+                  <strong>{event.title}</strong>
+                  {event.note ? <small>{event.note}</small> : null}
+                </span>
+                {!event.allDay ? <span className="day-event-end">{event.end}</span> : null}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="day-events-empty">还没有日程。小组讨论、交作业、社团活动都可以放进来。</p>
+        )}
+      </section>
     </div>
   );
 }

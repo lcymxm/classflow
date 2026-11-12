@@ -1,10 +1,10 @@
 {
   "name": "classflow",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "packageManager": "pnpm@11.28.5",
-  "description": "课序 · 本地优先的大学课表。周/日视图、课程管理、今日提醒、ICS 日历导出与离线 PWA。",
+  "description": "课序 · 本地优先的大学课表。多课表、多作息、日程、节假日调休、壁纸、ICS 导出与离线 PWA/Android APK。",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

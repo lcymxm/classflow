@@ -53,11 +53,59 @@ export interface Semester {
   periods: Period[];
 }
 
-export interface ScheduleData {
-  version: 1;
+export interface PeriodProfile {
+  id: string;
+  name: string;
+  periods: Period[];
+}
+
+export type WallpaperPreset = "paper" | "sage" | "dawn" | "dusk";
+
+export interface Wallpaper {
+  preset: WallpaperPreset | "custom";
+  dataUrl: string;
+  dim: number;
+}
+
+export interface ScheduleEvent {
+  id: string;
+  title: string;
+  date: string;
+  allDay: boolean;
+  start: string;
+  end: string;
+  note: string;
+  tone: ToneId;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Timetable {
+  id: string;
+  name: string;
   semester: Semester;
+  periodProfileId: string | null;
   courses: Course[];
-  isDemo: boolean;
+  events: ScheduleEvent[];
+  wallpaper: Wallpaper;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimetableCreateInput {
+  name: string;
+  semesterName: string;
+  startDate: string;
+  totalWeeks: number;
+  showWeekends: boolean;
+  periodProfileId: string;
+}
+
+export interface ScheduleData {
+  version: 2;
+  activeTimetableId: string;
+  timetables: Timetable[];
+  periodProfiles: PeriodProfile[];
   updatedAt: string;
 }
 
@@ -82,6 +130,7 @@ export type AppPage = "timetable" | "courses";
 export interface Preferences {
   theme: Theme;
   view: ViewMode;
+  autoHolidays: boolean;
 }
 
 export interface NextSession {

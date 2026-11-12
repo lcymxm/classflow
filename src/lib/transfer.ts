@@ -1,12 +1,13 @@
-import type { ScheduleData } from "../types";
-import { dateKey, getDateForSlot, timeToMinutes } from "./date";
+import type { ScheduleData, Timetable } from "../types";
+import { dateKey, getDateForSlot, parseDateKey, timeToMinutes } from "./date";
+import { isHolidayDate } from "./holidays";
 import { isSlotActiveInWeek } from "./schedule";
 import { normalizeSchedule } from "./storage";
 import { deliverTextFile, type ExportResult, type FileDelivery } from "./nativeFile";
 
 interface ExportEnvelope {
   app: "kexu";
-  version: 1;
+  version: 2;
   exportedAt: string;
   data: ScheduleData;
 }
@@ -14,7 +15,7 @@ interface ExportEnvelope {
 export function exportEnvelope(data: ScheduleData): ExportEnvelope {
   return {
     app: "kexu",
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     data,
   };
@@ -24,8 +25,16 @@ export function sanitizeFilename(value: string): string {
   return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim() || "课序";
 }
 
+function activeTimetable(data: ScheduleData): Timetable {
+  return (
+    data.timetables.find((timetable) => timetable.id === data.activeTimetableId) ??
+    data.timetables[0]
+  );
+}
+
 export async function downloadScheduleJson(data: ScheduleData): Promise<ExportResult> {
-  const filename = `课序-${sanitizeFilename(data.semester.name)}-${dateKey(new Date())}.json`;
+  const active = activeTimetable(data);
+  const filename = `课序-${sanitizeFilename(active.semester.name)}-${dateKey(new Date())}.json`;
   const delivery = await deliverTextFile(
     filename,
     JSON.stringify(exportEnvelope(data), null, 2),
@@ -53,6 +62,10 @@ function icsLocalDate(date: Date, time: string): string {
   )}${pad(minutes)}00`;
 }
 
+function icsDateOnly(date: Date): string {
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
+}
+
 function icsStamp(date: Date): string {
   return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(
     date.getUTCDate(),
@@ -75,16 +88,20 @@ function foldLine(line: string): string {
   return result + current;
 }
 
-export function buildIcs(data: ScheduleData): { content: string; count: number } {
-  const { semester, courses } = data;
+export function buildIcs(
+  data: ScheduleData,
+  autoHolidays = true,
+): { content: string; count: number } {
+  const active = activeTimetable(data);
+  const { semester, courses, events } = active;
   const now = new Date();
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//ClassFlow//Kexu 1.0//CN",
+    "PRODID:-//ClassFlow//Kexu 2.0//CN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    `X-WR-CALNAME:${icsEscape(semester.name)}`,
+    `X-WR-CALNAME:${icsEscape(`${active.name}·${semester.name}`)}`,
   ];
   let count = 0;
 
@@ -96,7 +113,9 @@ export function buildIcs(data: ScheduleData): { content: string; count: number }
         const periodEnd = semester.periods[slot.end - 1];
         if (!periodStart || !periodEnd) continue;
         const date = getDateForSlot(semester.startDate, week, slot.day);
+        if (autoHolidays && isHolidayDate(date)) continue;
         const description = [
+          course.name,
           course.teacher ? `教师：${course.teacher}` : "",
           course.location ? `地点：${course.location}` : "",
           `第 ${week} 周 · 第 ${slot.start}${
@@ -122,15 +141,39 @@ export function buildIcs(data: ScheduleData): { content: string; count: number }
     }
   }
 
+  for (const event of events) {
+    const date = parseDateKey(event.date);
+    const description = [event.title, event.allDay ? "全天日程" : "日程", event.note]
+      .filter(Boolean)
+      .join("\n");
+    lines.push(
+      "BEGIN:VEVENT",
+      foldLine(`UID:${event.id}@classflow-event`),
+      `DTSTAMP:${icsStamp(now)}`,
+      event.allDay
+        ? `DTSTART;VALUE=DATE:${icsDateOnly(date)}`
+        : foldLine(`DTSTART:${icsLocalDate(date, event.start)}`),
+      event.allDay
+        ? `DTEND;VALUE=DATE:${icsDateOnly(new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1))}`
+        : foldLine(`DTEND:${icsLocalDate(date, event.end)}`),
+      foldLine(`SUMMARY:${icsEscape(event.title)}`),
+      foldLine(`DESCRIPTION:${icsEscape(description)}`),
+      "END:VEVENT",
+    );
+    count += 1;
+  }
+
   lines.push("END:VCALENDAR");
   return { content: `${lines.join("\r\n")}\r\n`, count };
 }
 
 export async function downloadScheduleIcs(
   data: ScheduleData,
+  autoHolidays = true,
 ): Promise<ExportResult & { count: number }> {
-  const { content, count } = buildIcs(data);
-  const filename = `课序-${sanitizeFilename(data.semester.name)}.ics`;
+  const active = activeTimetable(data);
+  const { content, count } = buildIcs(data, autoHolidays);
+  const filename = `课序-${sanitizeFilename(active.semester.name)}.ics`;
   const delivery: FileDelivery = await deliverTextFile(
     filename,
     content,
@@ -143,8 +186,8 @@ export async function readScheduleFile(file: File): Promise<{
   data: ScheduleData | null;
   message: string;
 }> {
-  if (file.size > 5 * 1024 * 1024) {
-    return { data: null, message: "文件超过 5 MB，无法导入。" };
+  if (file.size > 20 * 1024 * 1024) {
+    return { data: null, message: "文件超过 20 MB，无法导入。" };
   }
   let parsed: unknown;
   try {
@@ -152,26 +195,26 @@ export async function readScheduleFile(file: File): Promise<{
   } catch {
     return { data: null, message: "文件不是有效的 JSON。" };
   }
-  const data = normalizeSchedule(parsed, false);
+  const data = normalizeSchedule(parsed);
   if (!data) {
     return { data: null, message: "没有找到可识别的课表数据。" };
   }
-  if (data.courses.length === 0) {
-    return { data, message: "备份里没有课程，已导入空课表。" };
+  const courseCount = data.timetables.reduce(
+    (total, timetable) => total + timetable.courses.length,
+    0,
+  );
+  const slotCount = data.timetables.reduce(
+    (total, timetable) =>
+      total + timetable.courses.reduce((sum, course) => sum + course.slots.length, 0),
+    0,
+  );
+  if (courseCount === 0) {
+    return { data, message: `已导入 ${data.timetables.length} 套空课表。` };
   }
   return {
     data,
-    message: `已读取 ${data.courses.length} 门课程，共 ${data.courses.reduce(
-      (total, course) => total + course.slots.length,
-      0,
-    )} 个时间段。`,
+    message: `已读取 ${data.timetables.length} 套课表、${courseCount} 门课程，共 ${slotCount} 个时间段。`,
   };
-}
-
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 export function minutesToHoursLabel(minutes: number): string {

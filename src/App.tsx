@@ -1,22 +1,40 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight,
   ArrowUpRight,
+  Image as ImageIcon,
   LayoutGrid,
   List,
   Plus,
   Printer,
-  Sparkles,
 } from "lucide-react";
-import type { AppPage, Course, ImportResult, Preferences, ScheduleData, Semester } from "./types";
-import { getWeekdayNumber, getWeekNumber, getWeekDates, getTermPosition } from "./lib/date";
+import type {
+  AppPage,
+  Course,
+  ImportResult,
+  Preferences,
+  ScheduleData,
+  ScheduleEvent,
+  Semester,
+  Timetable as TimetableModel,
+  TimetableCreateInput,
+} from "./types";
 import {
-  buildSessions,
-  getWeekStats,
-} from "./lib/schedule";
+  dateKey,
+  getDefaultStartDate,
+  getTermPosition,
+  getWeekDates,
+  getWeekNumber,
+  getWeekdayNumber,
+  getTermName,
+  parseDateKey,
+  startOfWeekMonday,
+} from "./lib/date";
+import { buildSessions, getWeekStats } from "./lib/schedule";
 import {
-  createBlankSchedule,
-  createDemoSchedule,
+  MAX_TIMETABLES,
+  cloneTimetable,
+  createBlankTimetable,
+  createInitialData,
 } from "./lib/factory";
 import {
   loadPreferences,
@@ -25,6 +43,13 @@ import {
   savePreferences,
   saveSchedule,
 } from "./lib/storage";
+import {
+  filterHolidaySessions,
+  getCalendarSummary,
+  getDayStatusMap,
+  getVisibleDays,
+} from "./lib/holidays";
+import { wallpaperStyle } from "./lib/wallpaper";
 import { downloadScheduleIcs, downloadScheduleJson, readScheduleFile } from "./lib/transfer";
 import { isNativeApp } from "./lib/nativeFile";
 import { CourseDetail } from "./components/CourseDetail";
@@ -33,13 +58,17 @@ import type { EditorSeed } from "./components/CourseEditor";
 import { CourseLibrary } from "./components/CourseLibrary";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { DayView } from "./components/DayView";
+import { EventEditor } from "./components/EventEditor";
+import type { EventSeed } from "./components/EventEditor";
 import { SettingsModal } from "./components/SettingsModal";
 import { Sidebar } from "./components/Sidebar";
 import { Timetable } from "./components/Timetable";
+import { TimetableManager } from "./components/TimetableManager";
 import { Toast } from "./components/Toast";
 import type { ToastState } from "./components/Toast";
 import { TodayRail } from "./components/TodayRail";
 import { Topbar } from "./components/Topbar";
+import { WallpaperModal } from "./components/WallpaperModal";
 import { WeekHero } from "./components/WeekHero";
 
 interface ConfirmState {
@@ -59,22 +88,8 @@ function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
-function DemoBanner({ onClear }: { onClear: () => void }) {
-  return (
-    <div className="demo-banner">
-      <span className="demo-icon">
-        <Sparkles size={15} />
-      </span>
-      <p>
-        <strong>这是示例课表。</strong>
-        随便看看、随手改，或者从一份空白开始。
-      </p>
-      <button className="text-button" type="button" onClick={onClear}>
-        清空示例
-        <ArrowRight size={14} />
-      </button>
-    </div>
-  );
+function activeTimetable(data: ScheduleData): TimetableModel {
+  return data.timetables.find((item) => item.id === data.activeTimetableId) ?? data.timetables[0];
 }
 
 export default function App() {
@@ -82,13 +97,17 @@ export default function App() {
   const [prefs, setPrefs] = useState<Preferences>(() => loadPreferences());
   const [page, setPage] = useState<AppPage>("timetable");
   const [now, setNow] = useState(() => new Date());
+  const initialTimetable = activeTimetable(data);
   const [week, setWeek] = useState(() =>
-    getWeekNumber(data.semester.startDate, new Date(), data.semester.totalWeeks),
+    getWeekNumber(initialTimetable.semester.startDate, new Date(), initialTimetable.semester.totalWeeks),
   );
   const [selectedDay, setSelectedDay] = useState(() => getWeekdayNumber(new Date()));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [timetablesOpen, setTimetablesOpen] = useState(false);
+  const [wallpaperOpen, setWallpaperOpen] = useState(false);
   const [editorSeed, setEditorSeed] = useState<EditorSeed | null>(null);
+  const [eventSeed, setEventSeed] = useState<EventSeed | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -96,39 +115,87 @@ export default function App() {
   const toastId = useRef(0);
   const confirmResolve = useRef<((value: boolean) => void) | null>(null);
 
-  const currentWeek = getTermPosition(
-    data.semester.startDate,
-    data.semester.totalWeeks,
-    now,
-  ).week;
-  const termState = getTermPosition(data.semester.startDate, data.semester.totalWeeks, now).state;
+  const timetable = activeTimetable(data);
+  const semester = timetable.semester;
+  const courses = timetable.courses;
+  const events = timetable.events;
   const todayNumber = getWeekdayNumber(now);
-  const visibleDays = data.semester.showWeekends ? 7 : 5;
+  const termPosition = getTermPosition(semester.startDate, semester.totalWeeks, now);
+  const currentWeek = termPosition.week;
+  const termState = termPosition.state;
 
-  const viewDates = useMemo(
-    () => getWeekDates(data.semester.startDate, week),
-    [data.semester.startDate, week],
-  );
+  const viewDates = useMemo(() => getWeekDates(semester.startDate, week), [semester.startDate, week]);
   const currentDates = useMemo(
-    () => getWeekDates(data.semester.startDate, currentWeek),
-    [data.semester.startDate, currentWeek],
+    () => getWeekDates(semester.startDate, currentWeek),
+    [semester.startDate, currentWeek],
   );
-  const viewSessions = useMemo(() => buildSessions(data.courses, week), [data.courses, week]);
+  const viewDays = useMemo(
+    () => getVisibleDays(semester.showWeekends, viewDates, prefs.autoHolidays),
+    [semester.showWeekends, viewDates, prefs.autoHolidays],
+  );
+  const currentDays = useMemo(
+    () => getVisibleDays(semester.showWeekends, currentDates, prefs.autoHolidays),
+    [semester.showWeekends, currentDates, prefs.autoHolidays],
+  );
+  const viewDayStatuses = useMemo(
+    () => getDayStatusMap(viewDates, prefs.autoHolidays),
+    [viewDates, prefs.autoHolidays],
+  );
+  const currentDayStatuses = useMemo(
+    () => getDayStatusMap(currentDates, prefs.autoHolidays),
+    [currentDates, prefs.autoHolidays],
+  );
+  const rawViewSessions = useMemo(() => buildSessions(courses, week), [courses, week]);
+  const rawCurrentSessions = useMemo(
+    () => buildSessions(courses, currentWeek),
+    [courses, currentWeek],
+  );
+  const viewSessions = useMemo(
+    () => filterHolidaySessions(rawViewSessions, viewDates, prefs.autoHolidays),
+    [rawViewSessions, viewDates, prefs.autoHolidays],
+  );
   const currentSessions = useMemo(
-    () => buildSessions(data.courses, currentWeek),
-    [data.courses, currentWeek],
+    () => filterHolidaySessions(rawCurrentSessions, currentDates, prefs.autoHolidays),
+    [rawCurrentSessions, currentDates, prefs.autoHolidays],
   );
   const viewStats = useMemo(
-    () => getWeekStats(viewSessions, data.semester.periods),
-    [viewSessions, data.semester.periods],
+    () => getWeekStats(viewSessions, semester.periods),
+    [viewSessions, semester.periods],
   );
   const currentStats = useMemo(
-    () => getWeekStats(currentSessions, data.semester.periods),
-    [currentSessions, data.semester.periods],
+    () => getWeekStats(currentSessions, semester.periods),
+    [currentSessions, semester.periods],
   );
-  const detailCourse = detailId
-    ? data.courses.find((course) => course.id === detailId) ?? null
-    : null;
+  const calendarSummary = useMemo(
+    () => getCalendarSummary(viewDates, prefs.autoHolidays),
+    [viewDates, prefs.autoHolidays],
+  );
+  const viewEventCounts = useMemo(() => {
+    const counts: Record<number, number> = {};
+    for (const day of viewDays) {
+      const date = viewDates[day - 1];
+      if (!date) continue;
+      counts[day] = events.filter((event) => event.date === dateKey(date)).length;
+    }
+    return counts;
+  }, [events, viewDates, viewDays]);
+  const selectedDate = viewDates[selectedDay - 1] ?? viewDates[0];
+  const selectedEvents = selectedDate
+    ? events.filter((event) => event.date === dateKey(selectedDate))
+    : [];
+  const weekEvents = useMemo(() => {
+    const keys = new Set(viewDates.map((date) => dateKey(date)));
+    return events
+      .filter((event) => keys.has(event.date))
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        if (a.allDay !== b.allDay) return a.allDay ? -1 : 1;
+        return a.start.localeCompare(b.start);
+      });
+  }, [events, viewDates]);
+  const todayEvents = events.filter((event) => event.date === dateKey(now));
+  const detailCourse = detailId ? courses.find((course) => course.id === detailId) ?? null : null;
+  const nativeApp = isNativeApp();
 
   const notify = useCallback((message: string, tone: ToastState["tone"] = "success") => {
     toastId.current += 1;
@@ -153,14 +220,27 @@ export default function App() {
     resolve?.(value);
   }, []);
 
+  const updateActiveTimetable = useCallback((updater: (current: TimetableModel) => TimetableModel) => {
+    setData((current) => {
+      const activeId = current.activeTimetableId;
+      const timestamp = new Date().toISOString();
+      return {
+        ...current,
+        updatedAt: timestamp,
+        timetables: current.timetables.map((item) =>
+          item.id === activeId ? { ...updater(item), updatedAt: timestamp } : item,
+        ),
+      };
+    });
+  }, []);
+
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
-    const ok = saveSchedule(data);
-    setStorageOk(ok);
+    setStorageOk(saveSchedule(data));
   }, [data]);
 
   useEffect(() => {
@@ -184,32 +264,40 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (termState === "during" && week > data.semester.totalWeeks) {
-      setWeek(data.semester.totalWeeks);
+    if (termState === "during" && week > semester.totalWeeks) {
+      setWeek(semester.totalWeeks);
     }
     if (week < 1) setWeek(1);
-  }, [data.semester.totalWeeks, termState, week]);
+  }, [semester.totalWeeks, termState, week]);
 
   useEffect(() => {
-    if (!data.semester.showWeekends && selectedDay > 5) setSelectedDay(1);
-  }, [data.semester.showWeekends, selectedDay]);
+    if (!viewDays.includes(selectedDay)) {
+      setSelectedDay(viewDays.includes(todayNumber) ? todayNumber : viewDays[0] ?? 1);
+    }
+  }, [viewDays, selectedDay, todayNumber]);
+
+  useEffect(() => {
+    if (selectedDay > 7) setSelectedDay(1);
+  }, [selectedDay]);
 
   const goToWeek = useCallback(
     (nextWeek: number) => {
-      setWeek(Math.min(Math.max(nextWeek, 1), data.semester.totalWeeks));
+      setWeek(Math.min(Math.max(nextWeek, 1), semester.totalWeeks));
     },
-    [data.semester.totalWeeks],
+    [semester.totalWeeks],
   );
 
   const goToday = useCallback(() => {
     setWeek(currentWeek);
-    setSelectedDay(Math.min(todayNumber, visibleDays));
-  }, [currentWeek, todayNumber, visibleDays]);
+    setSelectedDay(
+      viewDays.includes(todayNumber) ? todayNumber : viewDays[0] ?? 1,
+    );
+  }, [currentWeek, todayNumber, viewDays]);
 
   const changeView = (view: "week" | "day") => {
     setPrefs((current) => ({ ...current, view }));
-    if (view === "day" && selectedDay > visibleDays) {
-      setSelectedDay(Math.min(todayNumber, visibleDays));
+    if (view === "day" && !viewDays.includes(selectedDay)) {
+      setSelectedDay(viewDays.includes(todayNumber) ? todayNumber : viewDays[0] ?? 1);
     }
   };
 
@@ -224,21 +312,24 @@ export default function App() {
     setSidebarOpen(false);
   };
 
+  const openEventEditor = (seed: EventSeed = {}) => {
+    setEventSeed({ date: seed.date ?? dateKey(now), event: seed.event });
+    setSidebarOpen(false);
+  };
+
   const openCourseDetail = (course: Course) => {
     setDetailId(course.id);
   };
 
   const saveCourse = (course: Course) => {
     const editing = Boolean(editorSeed?.course);
-    setData((current) => {
+    updateActiveTimetable((current) => {
       const exists = current.courses.some((item) => item.id === course.id);
       return {
         ...current,
-        isDemo: false,
         courses: exists
           ? current.courses.map((item) => (item.id === course.id ? course : item))
           : [...current.courses, course],
-        updatedAt: new Date().toISOString(),
       };
     });
     setEditorSeed(null);
@@ -254,82 +345,224 @@ export default function App() {
     }).then((ok) => {
       if (!ok) return;
       setDetailId(null);
-      setData((current) => ({
+      updateActiveTimetable((current) => ({
         ...current,
-        isDemo: false,
         courses: current.courses.filter((item) => item.id !== course.id),
-        updatedAt: new Date().toISOString(),
       }));
       notify("课程已删除。");
     });
   };
 
-  const clearCourses = (mode: "blank" | "demo") => {
-    const next = mode === "blank" ? createBlankSchedule() : createDemoSchedule();
-    setData(next);
-    setWeek(getWeekNumber(next.semester.startDate, new Date(), next.semester.totalWeeks));
-    setSelectedDay(Math.min(todayNumber, next.semester.showWeekends ? 7 : 5));
-    setSettingsOpen(false);
-    setPage("timetable");
-    notify(mode === "blank" ? "已经清空，开始写自己的课表吧。" : "示例课表已恢复。");
+  const saveEvent = (event: ScheduleEvent) => {
+    const editing = Boolean(eventSeed?.event);
+    updateActiveTimetable((current) => {
+      const exists = current.events.some((item) => item.id === event.id);
+      return {
+        ...current,
+        events: exists
+          ? current.events.map((item) => (item.id === event.id ? event : item))
+          : [...current.events, event],
+      };
+    });
+    setEventSeed(null);
+    notify(editing ? "日程已更新。" : "日程已添加。");
   };
 
-  const requestClear = (mode: "blank" | "demo") => {
+  const requestDeleteEvent = (event: ScheduleEvent) => {
     void askConfirm({
-      title: mode === "blank" ? "清空全部数据？" : "恢复示例课表？",
-      message:
-        mode === "blank"
-          ? "当前学期、课程和设置都会被清空，无法撤销。建议先在「设置 → 数据与备份」导出 JSON。"
-          : "当前的课表会被示例数据覆盖，无法撤销。",
-      confirmLabel: mode === "blank" ? "清空数据" : "恢复示例",
-      tone: mode === "blank" ? "danger" : "default",
+      title: "删除这条日程？",
+      message: `“${event.title}”会从课表中移除，这个操作无法撤销。`,
+      confirmLabel: "删除日程",
+      tone: "danger",
     }).then((ok) => {
-      if (ok) clearCourses(mode);
+      if (!ok) return;
+      setEventSeed(null);
+      updateActiveTimetable((current) => ({
+        ...current,
+        events: current.events.filter((item) => item.id !== event.id),
+      }));
+      notify("日程已删除。");
     });
   };
 
-  const saveSemester = (semester: Semester) => {
+  const saveSemester = (nextSemester: Semester, periodProfileId: string | null) => {
+    updateActiveTimetable((current) => ({
+      ...current,
+      semester: nextSemester,
+      periodProfileId,
+    }));
+    setWeek(getWeekNumber(nextSemester.startDate, new Date(), nextSemester.totalWeeks));
+    setSelectedDay(Math.min(selectedDay, nextSemester.showWeekends ? 7 : 5));
+    setSettingsOpen(false);
+    notify("课表设置已更新。");
+  };
+
+  const switchTimetable = (id: string) => {
+    const target = data.timetables.find((item) => item.id === id);
+    if (!target) return;
     setData((current) => ({
       ...current,
-      semester,
-      isDemo: false,
+      activeTimetableId: id,
       updatedAt: new Date().toISOString(),
     }));
-    const nextWeek = getWeekNumber(semester.startDate, new Date(), semester.totalWeeks);
-    setWeek(nextWeek);
-    setSelectedDay((current) => Math.min(current, semester.showWeekends ? 7 : 5));
-    setSettingsOpen(false);
-    notify("学期设置已更新。");
+    setWeek(getWeekNumber(target.semester.startDate, new Date(), target.semester.totalWeeks));
+    setSelectedDay(getWeekdayNumber(new Date()));
+    setTimetablesOpen(false);
+    setPage("timetable");
+    notify(`已切换到「${target.name}」。`);
+  };
+
+  const createTimetable = (input: TimetableCreateInput) => {
+    if (data.timetables.length >= MAX_TIMETABLES) {
+      notify(`最多只能创建 ${MAX_TIMETABLES} 套课表。`, "error");
+      return;
+    }
+    const profile =
+      data.periodProfiles.find((item) => item.id === input.periodProfileId) ??
+      data.periodProfiles[0];
+    const date = startOfWeekMonday(parseDateKey(input.startDate || getDefaultStartDate()));
+    const created = createBlankTimetable(
+      data.periodProfiles,
+      new Date(),
+      input.name.trim() || `我的课表 ${data.timetables.length + 1}`,
+    );
+    created.semester = {
+      ...created.semester,
+      name: input.semesterName.trim() || getTermName(date),
+      startDate: dateKey(date),
+      totalWeeks: input.totalWeeks,
+      showWeekends: input.showWeekends,
+      periods: profile.periods.map((period) => ({ ...period })),
+    };
+    created.periodProfileId = profile.id;
+    setData((current) => ({
+      ...current,
+      activeTimetableId: created.id,
+      timetables: [...current.timetables, created],
+      updatedAt: new Date().toISOString(),
+    }));
+    setWeek(getWeekNumber(created.semester.startDate, new Date(), created.semester.totalWeeks));
+    setSelectedDay(getWeekdayNumber(new Date()));
+    setTimetablesOpen(false);
+    setPage("timetable");
+    notify(`已创建「${created.name}」。`);
+  };
+
+  const renameTimetable = (id: string, name: string) => {
+    setData((current) => ({
+      ...current,
+      timetables: current.timetables.map((item) =>
+        item.id === id ? { ...item, name: name.trim().slice(0, 60), updatedAt: new Date().toISOString() } : item,
+      ),
+      updatedAt: new Date().toISOString(),
+    }));
+    notify("课表名称已更新。");
+  };
+
+  const duplicateTimetable = (id: string) => {
+    if (data.timetables.length >= MAX_TIMETABLES) {
+      notify(`最多只能创建 ${MAX_TIMETABLES} 套课表。`, "error");
+      return;
+    }
+    const source = data.timetables.find((item) => item.id === id);
+    if (!source) return;
+    const copy = cloneTimetable(source, `${source.name} 副本`.slice(0, 60));
+    setData((current) => ({
+      ...current,
+      activeTimetableId: copy.id,
+      timetables: [...current.timetables, copy],
+      updatedAt: new Date().toISOString(),
+    }));
+    setWeek(getWeekNumber(copy.semester.startDate, new Date(), copy.semester.totalWeeks));
+    setSelectedDay(getWeekdayNumber(new Date()));
+    setTimetablesOpen(false);
+    setPage("timetable");
+    notify(`已复制为「${copy.name}」。`);
+  };
+
+  const requestDeleteTimetable = (id: string) => {
+    if (data.timetables.length <= 1) {
+      notify("至少保留一套课表。", "error");
+      return;
+    }
+    const target = data.timetables.find((item) => item.id === id);
+    if (!target) return;
+    void askConfirm({
+      title: `删除「${target.name}」？`,
+      message: "这套课表里的课程、日程和壁纸都会一起删除，无法撤销。",
+      confirmLabel: "删除课表",
+      tone: "danger",
+    }).then((ok) => {
+      if (!ok) return;
+      const remaining = data.timetables.filter((item) => item.id !== id);
+      const nextActive =
+        data.activeTimetableId === id ? remaining[0] : data.timetables.find((item) => item.id === data.activeTimetableId) ?? remaining[0];
+      setData({
+        ...data,
+        activeTimetableId: nextActive.id,
+        timetables: remaining,
+        updatedAt: new Date().toISOString(),
+      });
+      setTimetablesOpen(false);
+      setWeek(getWeekNumber(nextActive.semester.startDate, new Date(), nextActive.semester.totalWeeks));
+      setSelectedDay(getWeekdayNumber(new Date()));
+      notify(`已删除「${target.name}」。`);
+    });
+  };
+
+  const clearAll = () => {
+    void askConfirm({
+      title: "清空全部数据？",
+      message: "所有课表、课程、日程和壁纸都会被清空，无法撤销。主题和节假日开关会保留。建议先导出备份。",
+      confirmLabel: "清空全部",
+      tone: "danger",
+    }).then((ok) => {
+      if (!ok) return;
+      const next = createInitialData();
+      setData(next);
+      const first = activeTimetable(next);
+      setWeek(getWeekNumber(first.semester.startDate, new Date(), first.semester.totalWeeks));
+      setSelectedDay(getWeekdayNumber(new Date()));
+      setSettingsOpen(false);
+      setPage("timetable");
+      notify("已经清空，开始写自己的课表吧。");
+    });
+  };
+
+  const updateWallpaper = (wallpaper: TimetableModel["wallpaper"]) => {
+    updateActiveTimetable((current) => ({ ...current, wallpaper }));
   };
 
   const exportJson = () => downloadScheduleJson(data);
 
-  const exportIcs = () => downloadScheduleIcs(data);
+  const exportIcs = () => downloadScheduleIcs(data, prefs.autoHolidays);
 
   const printTimetable = () => {
     setSettingsOpen(false);
     setDetailId(null);
     setEditorSeed(null);
+    setEventSeed(null);
     window.setTimeout(() => window.print(), 150);
   };
 
   const importFile = async (file: File): Promise<ImportResult> => {
     const result = await readScheduleFile(file);
     if (!result.data) return { ok: false, message: result.message };
-    const next = normalizeSchedule(result.data, false);
+    const next = normalizeSchedule(result.data);
     if (!next) return { ok: false, message: "备份格式无法识别。" };
     const confirmed = await askConfirm({
-      title: "导入并替换当前课表？",
-      message: `将导入「${next.semester.name}」的 ${next.courses.length} 门课程，并替换当前 ${data.courses.length} 门课程。\n建议先导出现有备份。`,
+      title: "导入并替换全部课表？",
+      message: `将导入 ${next.timetables.length} 套课表，替换当前的 ${data.timetables.length} 套课表。\n建议先导出现有备份。`,
       confirmLabel: "导入并替换",
       tone: "danger",
     });
     if (!confirmed) {
       return { ok: false, message: "已取消导入，当前课表未改变。" };
     }
+    const nextActive = activeTimetable(next);
     setData(next);
-    setWeek(getWeekNumber(next.semester.startDate, new Date(), next.semester.totalWeeks));
-    setSelectedDay(Math.min(todayNumber, next.semester.showWeekends ? 7 : 5));
+    setWeek(getWeekNumber(nextActive.semester.startDate, new Date(), nextActive.semester.totalWeeks));
+    setSelectedDay(getWeekdayNumber(new Date()));
     setSettingsOpen(false);
     setPage("timetable");
     notify(result.message);
@@ -341,6 +574,11 @@ export default function App() {
       ...current,
       theme: current.theme === "dark" ? "light" : "dark",
     }));
+  };
+
+  const setAutoHolidays = (value: boolean) => {
+    setPrefs((current) => ({ ...current, autoHolidays: value }));
+    notify(value ? "已开启节假日与调休识别。" : "已关闭节假日识别。");
   };
 
   useEffect(() => {
@@ -357,43 +595,52 @@ export default function App() {
         setEditorSeed({});
         return;
       }
+      if (event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        setEventSeed({ date: dateKey(viewDates[selectedDay - 1] ?? now) });
+        return;
+      }
       if (page !== "timetable") return;
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         setWeek((current) => Math.max(1, current - 1));
       } else if (event.key === "ArrowRight") {
         event.preventDefault();
-        setWeek((current) => Math.min(data.semester.totalWeeks, current + 1));
+        setWeek((current) => Math.min(semester.totalWeeks, current + 1));
       } else if (event.key.toLowerCase() === "t") {
         event.preventDefault();
         setWeek(currentWeek);
-        setSelectedDay(Math.min(todayNumber, visibleDays));
+        setSelectedDay(viewDays.includes(todayNumber) ? todayNumber : viewDays[0] ?? 1);
       }
     };
     document.addEventListener("keydown", handleKeydown);
     return () => document.removeEventListener("keydown", handleKeydown);
-  }, [sidebarOpen, page, data.semester.totalWeeks, currentWeek, todayNumber, visibleDays]);
+  }, [sidebarOpen, page, semester.totalWeeks, currentWeek, todayNumber, viewDays, now]);
 
   const isDayView = prefs.view === "day";
-  const nativeApp = isNativeApp();
 
   return (
     <div className="app-shell">
       <Sidebar
         open={sidebarOpen}
         page={page}
-        semesterName={data.semester.name}
+        timetableName={timetable.name}
+        timetableCount={data.timetables.length}
+        semesterName={semester.name}
         week={week}
         currentWeek={currentWeek}
-        totalWeeks={data.semester.totalWeeks}
-        courseCount={data.courses.length}
+        totalWeeks={semester.totalWeeks}
+        courseCount={courses.length}
         sessionCount={currentStats.sessionCount}
-        isDemo={data.isDemo}
         theme={prefs.theme}
         onNavigate={navigate}
         onToggleTheme={toggleTheme}
         onOpenSettings={() => {
           setSettingsOpen(true);
+          setSidebarOpen(false);
+        }}
+        onManageTimetables={() => {
+          setTimetablesOpen(true);
           setSidebarOpen(false);
         }}
       />
@@ -409,27 +656,28 @@ export default function App() {
       <div className="main-shell">
         <Topbar
           page={page}
-          semesterName={data.semester.name}
+          timetableName={timetable.name}
+          semesterName={semester.name}
           week={week}
           theme={prefs.theme}
           storageOk={storageOk}
           onOpenMenu={() => setSidebarOpen(true)}
           onAddCourse={() => openEditor()}
+          onAddEvent={() =>
+            openEventEditor({ date: dateKey(viewDates[selectedDay - 1] ?? now) })
+          }
           onOpenSettings={() => setSettingsOpen(true)}
+          onManageTimetables={() => setTimetablesOpen(true)}
           onToggleTheme={toggleTheme}
         />
 
         <main className="main">
-          {data.isDemo && page === "timetable" ? (
-            <DemoBanner onClear={() => requestClear("blank")} />
-          ) : null}
-
           {page === "timetable" ? (
             <>
               <WeekHero
                 week={week}
                 currentWeek={currentWeek}
-                totalWeeks={data.semester.totalWeeks}
+                totalWeeks={semester.totalWeeks}
                 dates={viewDates}
                 stats={viewStats}
                 termState={termState}
@@ -439,7 +687,11 @@ export default function App() {
               />
 
               <div className="content-grid">
-                <section className="board" aria-label="课表">
+                <section
+                  className="board"
+                  aria-label="课表"
+                  style={wallpaperStyle(timetable.wallpaper, prefs.theme)}
+                >
                   <div className="board-toolbar">
                     <div className="view-switch" role="group" aria-label="切换视图">
                       <button
@@ -465,6 +717,15 @@ export default function App() {
                       <span className="board-meta">
                         {viewStats.sessionCount} 节 · {viewStats.courseCount} 门
                       </span>
+                      <button
+                        className="icon-button"
+                        type="button"
+                        onClick={() => setWallpaperOpen(true)}
+                        aria-label="更换课表壁纸"
+                        title="更换课表壁纸"
+                      >
+                        <ImageIcon size={17} />
+                      </button>
                       {!nativeApp ? (
                         <button
                           className="icon-button"
@@ -481,26 +742,38 @@ export default function App() {
 
                   {isDayView ? (
                     <DayView
-                      semester={data.semester}
+                      semester={semester}
                       week={week}
                       currentWeek={currentWeek}
                       dates={viewDates}
-                      courses={data.courses}
+                      days={viewDays}
+                      sessions={viewSessions}
+                      events={selectedEvents}
+                      dayStatuses={viewDayStatuses}
                       selectedDay={selectedDay}
                       now={now}
                       onSelectDay={setSelectedDay}
                       onSelectCourse={openCourseDetail}
                       onAddAt={(day, start) => openEditor({ prefill: { day, start } })}
+                      onAddEvent={(date) => openEventEditor({ date })}
+                      onSelectEvent={(event) => openEventEditor({ event })}
                     />
                   ) : (
                     <Timetable
-                      semester={data.semester}
+                      semester={semester}
                       week={week}
                       currentWeek={currentWeek}
                       dates={viewDates}
-                      courses={data.courses}
+                      days={viewDays}
+                      courses={courses}
+                      sessions={viewSessions}
+                      dayStatuses={viewDayStatuses}
+                      eventCounts={viewEventCounts}
+                      weekEvents={weekEvents}
+                      calendarSummary={calendarSummary}
                       now={now}
                       onSelectCourse={openCourseDetail}
+                      onSelectEvent={(event) => openEventEditor({ event })}
                       onAddAt={(day, start) => openEditor({ prefill: { day, start } })}
                       onAddCourse={() => openEditor()}
                     />
@@ -510,20 +783,24 @@ export default function App() {
                 <TodayRail
                   now={now}
                   currentWeek={currentWeek}
-                  totalWeeks={data.semester.totalWeeks}
+                  totalWeeks={semester.totalWeeks}
                   weekDates={currentDates}
                   sessions={currentSessions}
-                  periods={data.semester.periods}
+                  periods={semester.periods}
                   stats={currentStats}
-                  showWeekends={data.semester.showWeekends}
+                  days={currentDays}
+                  holiday={currentDayStatuses[todayNumber] ?? null}
+                  events={todayEvents}
                   onSelectCourse={openCourseDetail}
+                  onSelectEvent={(event) => openEventEditor({ event })}
+                  onAddEvent={() => openEventEditor({ date: dateKey(now) })}
                 />
               </div>
             </>
           ) : (
             <CourseLibrary
-              courses={data.courses}
-              semester={data.semester}
+              courses={courses}
+              semester={semester}
               onAddCourse={() => openEditor()}
               onSelectCourse={openCourseDetail}
               onEditCourse={(course) => openEditor({ course })}
@@ -546,8 +823,8 @@ export default function App() {
         <CourseEditor
           key={editorSeed.course?.id ?? "new"}
           seed={editorSeed}
-          semester={data.semester}
-          courses={data.courses}
+          semester={semester}
+          courses={courses}
           onClose={() => setEditorSeed(null)}
           onSave={saveCourse}
         />
@@ -556,7 +833,7 @@ export default function App() {
       {detailCourse ? (
         <CourseDetail
           course={detailCourse}
-          semester={data.semester}
+          semester={semester}
           onClose={() => setDetailId(null)}
           onEdit={() => {
             setDetailId(null);
@@ -566,17 +843,49 @@ export default function App() {
         />
       ) : null}
 
+      {eventSeed ? (
+        <EventEditor
+          key={eventSeed.event?.id ?? `event-${eventSeed.date}`}
+          seed={eventSeed}
+          onClose={() => setEventSeed(null)}
+          onSave={saveEvent}
+          onDelete={requestDeleteEvent}
+        />
+      ) : null}
+
       {settingsOpen ? (
         <SettingsModal
           data={data}
+          autoHolidays={prefs.autoHolidays}
           onClose={() => setSettingsOpen(false)}
           onSaveSemester={saveSemester}
           onExportJson={exportJson}
           onExportIcs={exportIcs}
           onImportFile={importFile}
           onPrint={printTimetable}
-          onResetDemo={() => requestClear("demo")}
-          onClearData={() => requestClear("blank")}
+          onClearData={clearAll}
+          onToggleAutoHolidays={setAutoHolidays}
+        />
+      ) : null}
+
+      {timetablesOpen ? (
+        <TimetableManager
+          data={data}
+          onClose={() => setTimetablesOpen(false)}
+          onSwitch={switchTimetable}
+          onCreate={createTimetable}
+          onRename={renameTimetable}
+          onDuplicate={duplicateTimetable}
+          onDelete={requestDeleteTimetable}
+        />
+      ) : null}
+
+      {wallpaperOpen ? (
+        <WallpaperModal
+          wallpaper={timetable.wallpaper}
+          theme={prefs.theme}
+          onClose={() => setWallpaperOpen(false)}
+          onChange={updateWallpaper}
         />
       ) : null}
 
@@ -593,7 +902,7 @@ export default function App() {
 
       <Toast toast={toast} onClose={closeToast} />
 
-      {page === "timetable" && data.courses.length > 0 ? (
+      {page === "timetable" && courses.length > 0 ? (
         <button
           className="floating-add"
           type="button"

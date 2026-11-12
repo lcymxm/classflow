@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Layers,
   LayoutGrid,
   Moon,
   Settings2,
@@ -10,17 +11,19 @@ import type { AppPage, Theme } from "../types";
 interface SidebarProps {
   open: boolean;
   page: AppPage;
+  timetableName: string;
+  timetableCount: number;
   semesterName: string;
   week: number;
   currentWeek: number;
   totalWeeks: number;
   courseCount: number;
   sessionCount: number;
-  isDemo: boolean;
   theme: Theme;
   onNavigate: (page: AppPage) => void;
   onToggleTheme: () => void;
   onOpenSettings: () => void;
+  onManageTimetables: () => void;
 }
 
 export function LogoMark() {
@@ -37,17 +40,19 @@ export function LogoMark() {
 export function Sidebar({
   open,
   page,
+  timetableName,
+  timetableCount,
   semesterName,
   week,
   currentWeek,
   totalWeeks,
   courseCount,
   sessionCount,
-  isDemo,
   theme,
   onNavigate,
   onToggleTheme,
   onOpenSettings,
+  onManageTimetables,
 }: SidebarProps) {
   const progress = Math.min(100, Math.max(0, (currentWeek / Math.max(totalWeeks, 1)) * 100));
 
@@ -61,17 +66,24 @@ export function Sidebar({
         </div>
       </div>
 
-      <section className="term-card" aria-label="当前学期">
+      <section className="term-card" aria-label="当前课表">
         <div className="term-card-top">
-          <span className="micro-label">CURRENT TERM</span>
-          <button className="term-edit" type="button" onClick={onOpenSettings} aria-label="修改学期设置">
-            <Settings2 size={13} />
+          <span className="micro-label">TIMETABLE</span>
+          <button
+            className="term-edit"
+            type="button"
+            onClick={onManageTimetables}
+            aria-label="管理课表"
+            title="管理课表"
+          >
+            <Layers size={13} />
           </button>
         </div>
         <div className="term-name-row">
-          <h2>{semesterName}</h2>
-          {isDemo ? <span className="mini-tag">示例</span> : null}
+          <h2>{timetableName}</h2>
+          {timetableCount > 1 ? <span className="mini-tag">{timetableCount} 套</span> : null}
         </div>
+        <p className="term-sub">{semesterName}</p>
         <div className="term-progress" aria-hidden="true">
           <span style={{ width: `${progress}%` }} />
         </div>
