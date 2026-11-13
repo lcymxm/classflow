@@ -136,7 +136,7 @@ export interface LaidOutSession extends Session {
 
 export type Theme = "light" | "dark" | "whale";
 export type ViewMode = "week" | "day";
-export type AppPage = "timetable" | "courses";
+export type AppPage = "timetable" | "agenda" | "courses";
 
 export interface Preferences {
   theme: Theme;

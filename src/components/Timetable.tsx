@@ -1,19 +1,9 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import { CalendarDays, CalendarPlus, Plus, Sparkles } from "lucide-react";
-import type {
-  Course,
-  LaidOutSession,
-  ScheduleEvent,
-  Session,
-  Semester,
-} from "../types";
+import type { Course, LaidOutSession, Session, Semester } from "../types";
 import { toneColor } from "../types";
-import {
-  formatWeeks,
-  getPeriodNowProgress,
-  groupSessionsByDay,
-} from "../lib/schedule";
+import { getPeriodNowProgress, groupSessionsByDay } from "../lib/schedule";
 import { getWeekdayNumber, WEEKDAYS } from "../lib/date";
 import type { CalendarDayInfo } from "../lib/holidays";
 
@@ -28,12 +18,9 @@ interface TimetableProps {
   courses: Course[];
   sessions: Session[];
   dayStatuses: Record<number, CalendarDayInfo | null>;
-  eventCounts: Record<number, number>;
-  weekEvents: ScheduleEvent[];
   calendarSummary: { holidays: string[]; workdays: string[] };
   now: Date;
   onSelectCourse: (course: Course) => void;
-  onSelectEvent: (event: ScheduleEvent) => void;
   onAddAt: (day: number, start: number) => void;
   onAddCourse: () => void;
 }
@@ -61,12 +48,9 @@ export function Timetable({
   courses,
   sessions,
   dayStatuses,
-  eventCounts,
-  weekEvents,
   calendarSummary,
   now,
   onSelectCourse,
-  onSelectEvent,
   onAddAt,
   onAddCourse,
 }: TimetableProps) {
@@ -78,7 +62,6 @@ export function Timetable({
   const nowTop = nowProgress
     ? (nowProgress.period - 1 + nowProgress.fraction) * ROW_HEIGHT
     : null;
-  const hasEvents = Object.values(eventCounts).some((count) => count > 0);
 
   useEffect(() => {
     const scroller = scrollRef.current;
@@ -91,7 +74,7 @@ export function Timetable({
     scroller.scrollTo({ left: target, behavior: "smooth" });
   }, [week, currentWeek, days, todayNumber]);
 
-  if (courses.length === 0 && !hasEvents) {
+  if (courses.length === 0) {
     return (
       <div className="blank-board">
         <span className="blank-board-icon">
@@ -107,6 +90,158 @@ export function Timetable({
       </div>
     );
   }
+
+  const chunkSize = days.length > 5 ? Math.ceil(days.length / 2) : days.length;
+  const dayChunks: number[][] = [];
+  for (let index = 0; index < days.length; index += chunkSize) {
+    dayChunks.push(days.slice(index, index + chunkSize));
+  }
+
+  const renderGrid = (gridDays: number[], keyPrefix: string) => (
+    <div
+      className="timetable"
+      key={keyPrefix}
+      style={
+        {
+          "--row-height": `${ROW_HEIGHT}px`,
+          "--day-count": gridDays.length,
+        } as CSSProperties
+      }
+    >
+      <div className="tt-head">
+        <div className="tt-corner">
+          <span>节次</span>
+          <small>TIME</small>
+        </div>
+        {gridDays.map((day) => {
+          const info = WEEKDAYS[day - 1];
+          const date = dates[day - 1];
+          const isToday = showNow && day === todayNumber;
+          const status = dayStatuses[day] ?? null;
+          return (
+            <div
+              className={`tt-day-head ${isToday ? "is-today" : ""} ${
+                status ? `is-${status.kind}` : ""
+              }`}
+              key={day}
+              title={status ? status.name : undefined}
+            >
+              {status ? (
+                <span className={`day-status-tag is-${status.kind}`}>{status.short}</span>
+              ) : null}
+              <span className="day-en">{info.en}</span>
+              <span className="day-label">{info.label}</span>
+              <span className="day-date">
+                {date ? `${date.getMonth() + 1}/${date.getDate()}` : ""}
+              </span>
+              {isToday ? <span className="day-now-dot" aria-label="今天" /> : null}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="tt-body">
+        <div className="tt-times" aria-hidden="true">
+          {semester.periods.map((period) => (
+            <div className="tt-time" key={period.index}>
+              <b>{String(period.index).padStart(2, "0")}</b>
+              <span>{period.start}</span>
+              <small>{period.end}</small>
+            </div>
+          ))}
+        </div>
+
+        <div
+          className="tt-cols"
+          style={{ gridTemplateColumns: `repeat(${gridDays.length}, minmax(0, 1fr))` }}
+        >
+          {gridDays.map((day) => {
+            const isToday = showNow && day === todayNumber;
+            const status = dayStatuses[day] ?? null;
+            const holiday = status?.kind === "holiday";
+            return (
+              <div
+                className={`tt-col ${isToday ? "is-today" : ""} ${
+                  status ? `is-${status.kind}` : ""
+                }`}
+                key={day}
+              >
+                {semester.periods.map((period) => (
+                  <button
+                    className="tt-slot"
+                    type="button"
+                    key={period.index}
+                    onClick={() => onAddAt(day, period.index)}
+                    disabled={holiday}
+                    aria-label={
+                      holiday
+                        ? `${WEEKDAYS[day - 1].label}第 ${period.index} 节，法定节假日`
+                        : `${WEEKDAYS[day - 1].label}第 ${period.index} 节，添加课程`
+                    }
+                  >
+                    {!holiday ? (
+                      <span className="tt-slot-plus">
+                        <Plus size={12} />
+                      </span>
+                    ) : null}
+                  </button>
+                ))}
+
+                {holiday ? <span className="holiday-column-label">{status.name}</span> : null}
+
+                {(byDay[day] ?? []).map((session) => {
+                  const duration = session.end - session.start + 1;
+                  const ongoing =
+                    isToday &&
+                    nowProgress !== null &&
+                    nowProgress.period >= session.start &&
+                    nowProgress.period <= session.end;
+                  const conflict = session.columns > 1;
+                  return (
+                    <button
+                      className={`course-block ${ongoing ? "is-ongoing" : ""} ${
+                        conflict ? "is-conflict" : ""
+                      }`}
+                      type="button"
+                      style={courseBlockStyle(session)}
+                      key={session.id}
+                      onClick={() => onSelectCourse(session.course)}
+                      title={`${session.course.name}｜${session.course.location || "未填地点"}`}
+                    >
+                      <span className="course-block-top">
+                        <span className="course-block-name">{session.course.name}</span>
+                        {conflict ? (
+                          <span className="conflict-mark" title="时间冲突">
+                            !
+                          </span>
+                        ) : null}
+                        {ongoing && !conflict ? <span className="live-dot" /> : null}
+                      </span>
+                      <span className="course-block-meta">
+                        {session.course.location || "地点待定"}
+                      </span>
+                      {duration > 2 && session.course.teacher ? (
+                        <span className="course-block-foot">
+                          {session.course.teacher} · 第 {session.start}
+                          {session.end !== session.start ? `–${session.end}` : ""} 节
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+
+                {isToday && nowTop !== null ? (
+                  <span className="now-line" style={{ top: nowTop }} aria-hidden="true">
+                    <i />
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="timetable-zone">
@@ -128,37 +263,6 @@ export function Timetable({
         </div>
       ) : null}
 
-      {weekEvents.length > 0 ? (
-        <div className="week-event-strip">
-          <div className="week-event-strip-head">
-            <CalendarDays size={14} />
-            <span>本周日程</span>
-            <em>{weekEvents.length}</em>
-          </div>
-          <div className="week-event-chips">
-            {weekEvents.map((event) => {
-              const [, month, date] = event.date.split("-");
-              return (
-                <button
-                  className="week-event-chip"
-                  type="button"
-                  key={event.id}
-                  style={{ "--tone": toneColor(event.tone) } as CSSProperties}
-                  onClick={() => onSelectEvent(event)}
-                >
-                  <span className="week-event-chip-dot" />
-                  <span className="week-event-chip-date">{Number(month)}/{Number(date)}</span>
-                  <span className="week-event-chip-title">{event.title}</span>
-                  <span className="week-event-chip-time">
-                    {event.allDay ? "全天" : event.start}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-
       {sessions.length === 0 ? (
         <div className="week-empty">
           <CalendarPlus size={16} />
@@ -170,232 +274,16 @@ export function Timetable({
         </div>
       ) : null}
 
-      <div className="week-overview" aria-label="一周课程一览">
-        <div className="week-overview-head">
-          <span>本周一览</span>
-          <small>七天课程与完整教室</small>
-        </div>
-        {days.map((day) => {
-          const date = dates[day - 1];
-          const info = WEEKDAYS[day - 1];
-          const status = dayStatuses[day] ?? null;
-          const daySessions = byDay[day] ?? [];
-          const isToday = showNow && day === todayNumber;
-          const eventCount = eventCounts[day] ?? 0;
-          return (
-            <section
-              className={`week-overview-day ${isToday ? "is-today" : ""} ${
-                status ? `is-${status.kind}` : ""
-              }`}
-              key={day}
-            >
-              <div className="week-overview-day-head">
-                <strong>{info.label}</strong>
-                <span>
-                  {date ? `${date.getMonth() + 1}/${date.getDate()}` : ""}
-                </span>
-                {status ? (
-                  <em className={`day-status-tag is-${status.kind}`}>{status.short}</em>
-                ) : null}
-                {eventCount > 0 ? <em className="week-overview-event-count">{eventCount} 日程</em> : null}
-                <span className="week-overview-day-count">
-                  {daySessions.length > 0 ? `${daySessions.length} 节` : "没课"}
-                </span>
-              </div>
-              {daySessions.length > 0 ? (
-                <div className="week-overview-courses">
-                  {daySessions.map((session) => {
-                    const start = semester.periods[session.start - 1];
-                    const end = semester.periods[session.end - 1];
-                    return (
-                      <button
-                        className="week-overview-course"
-                        type="button"
-                        key={session.id}
-                        style={{ "--tone": toneColor(session.course.tone) } as CSSProperties}
-                        onClick={() => onSelectCourse(session.course)}
-                      >
-                        <span className="week-overview-time">
-                          <strong>{start?.start ?? ""}</strong>
-                          <span>{end?.end ?? ""}</span>
-                        </span>
-                        <span className="week-overview-copy">
-                          <strong>{session.course.name}</strong>
-                          <span className="week-overview-location">
-                            {session.course.location || "地点待定"}
-                          </span>
-                          <span className="week-overview-meta">
-                            {session.course.teacher ? `${session.course.teacher} · ` : ""}
-                            第 {session.start}
-                            {session.end !== session.start ? `–${session.end}` : ""} 节 ·{" "}
-                            {formatWeeks(session.slot)}
-                          </span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <span className="week-overview-empty">
-                  {status?.kind === "holiday" ? "今天放假" : "这一天没有课"}
-                </span>
-              )}
-            </section>
-          );
-        })}
+      <div className="timetable-scroll" ref={scrollRef}>
+        {renderGrid(days, "full-week")}
       </div>
 
-      <div className="timetable-scroll" ref={scrollRef}>
-        <div
-          className="timetable"
-          style={
-            {
-              "--row-height": `${ROW_HEIGHT}px`,
-              "--day-count": days.length,
-            } as CSSProperties
-          }
-        >
-          <div className="tt-head">
-            <div className="tt-corner">
-              <span>节次</span>
-              <small>TIME</small>
-            </div>
-            {days.map((day) => {
-              const info = WEEKDAYS[day - 1];
-              const date = dates[day - 1];
-              const isToday = showNow && day === todayNumber;
-              const status = dayStatuses[day] ?? null;
-              const eventCount = eventCounts[day] ?? 0;
-              return (
-                <div
-                  className={`tt-day-head ${isToday ? "is-today" : ""} ${
-                    status ? `is-${status.kind}` : ""
-                  }`}
-                  key={day}
-                  title={status ? status.name : undefined}
-                >
-                  {status ? (
-                    <span className={`day-status-tag is-${status.kind}`}>{status.short}</span>
-                  ) : null}
-                  <span className="day-en">{info.en}</span>
-                  <span className="day-label">{info.label}</span>
-                  <span className="day-date">
-                    {date ? `${date.getMonth() + 1}/${date.getDate()}` : ""}
-                  </span>
-                  {eventCount > 0 ? (
-                    <span className="day-event-count" title={`${eventCount} 条日程`}>
-                      <CalendarDays size={9} />
-                      {eventCount}
-                    </span>
-                  ) : null}
-                  {isToday ? <span className="day-now-dot" aria-label="今天" /> : null}
-                </div>
-              );
-            })}
+      <div className="timetable-chunks">
+        {dayChunks.map((chunk, index) => (
+          <div className="timetable-chunk" key={`chunk-${index}`}>
+            {renderGrid(chunk, `chunk-${index}`)}
           </div>
-
-          <div className="tt-body">
-            <div className="tt-times" aria-hidden="true">
-              {semester.periods.map((period) => (
-                <div className="tt-time" key={period.index}>
-                  <b>{String(period.index).padStart(2, "0")}</b>
-                  <span>{period.start}</span>
-                  <small>{period.end}</small>
-                </div>
-              ))}
-            </div>
-
-            <div
-              className="tt-cols"
-              style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}
-            >
-              {days.map((day) => {
-                const isToday = showNow && day === todayNumber;
-                const status = dayStatuses[day] ?? null;
-                const holiday = status?.kind === "holiday";
-                return (
-                  <div
-                    className={`tt-col ${isToday ? "is-today" : ""} ${
-                      status ? `is-${status.kind}` : ""
-                    }`}
-                    key={day}
-                  >
-                    {semester.periods.map((period) => (
-                      <button
-                        className="tt-slot"
-                        type="button"
-                        key={period.index}
-                        onClick={() => onAddAt(day, period.index)}
-                        disabled={holiday}
-                        aria-label={
-                          holiday
-                            ? `${WEEKDAYS[day - 1].label}第 ${period.index} 节，法定节假日`
-                            : `${WEEKDAYS[day - 1].label}第 ${period.index} 节，添加课程`
-                        }
-                      >
-                        {!holiday ? (
-                          <span className="tt-slot-plus">
-                            <Plus size={12} />
-                          </span>
-                        ) : null}
-                      </button>
-                    ))}
-
-                    {holiday ? (
-                      <span className="holiday-column-label">{status.name}</span>
-                    ) : null}
-
-                    {byDay[day].map((session) => {
-                      const duration = session.end - session.start + 1;
-                      const ongoing =
-                        isToday &&
-                        nowProgress !== null &&
-                        nowProgress.period >= session.start &&
-                        nowProgress.period <= session.end;
-                      const conflict = session.columns > 1;
-                      return (
-                        <button
-                          className={`course-block ${ongoing ? "is-ongoing" : ""} ${
-                            conflict ? "is-conflict" : ""
-                          }`}
-                          type="button"
-                          style={courseBlockStyle(session)}
-                          key={session.id}
-                          onClick={() => onSelectCourse(session.course)}
-                          title={`${session.course.name}｜${session.course.location || "未填地点"}`}
-                        >
-                          <span className="course-block-top">
-                            <span className="course-block-name">{session.course.name}</span>
-                            {conflict ? (
-                              <span className="conflict-mark" title="时间冲突">
-                                !
-                              </span>
-                            ) : null}
-                            {ongoing && !conflict ? <span className="live-dot" /> : null}
-                          </span>
-                          <span className="course-block-meta">
-                            {session.course.location || "地点待定"}
-                          </span>
-                          {duration > 2 && session.course.teacher ? (
-                            <span className="course-block-foot">
-                              {session.course.teacher} · {formatWeeks(session.slot)}
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    })}
-
-                    {isToday && nowTop !== null ? (
-                      <span className="now-line" style={{ top: nowTop }} aria-hidden="true">
-                        <i />
-                      </span>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );

@@ -7088,6 +7088,381 @@ html[data-theme="whale"] .week-pick.is-selected span {
 }
 
 
+
+/* Week page: the grid is the only focus; day/events live on the agenda page. */
+.content-grid--solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.board-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.board-title svg {
+  color: var(--coral);
+}
+
+/* Mobile week grid: two stacked mesh panels, no horizontal scrolling. */
+.timetable-chunks {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .timetable-scroll {
+    display: none;
+  }
+
+  .timetable-chunks {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    padding: 10px 10px 14px;
+  }
+
+  .timetable-chunk {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--surface);
+  }
+
+  .timetable-chunks .timetable {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .timetable-chunks .tt-head {
+    grid-template-columns: 30px repeat(var(--day-count), minmax(0, 1fr));
+    height: 53px;
+  }
+
+  .timetable-chunks .tt-body {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .timetable-chunks .tt-corner {
+    font-size: 7px;
+  }
+
+  .timetable-chunks .tt-corner small {
+    display: none;
+  }
+
+  .timetable-chunks .tt-time b {
+    font-size: 7px;
+  }
+
+  .timetable-chunks .tt-time span {
+    font-size: 5.8px;
+  }
+
+  .timetable-chunks .tt-time small {
+    display: none;
+  }
+
+  .timetable-chunks .tt-day-head {
+    gap: 0;
+  }
+
+  .timetable-chunks .day-en {
+    display: none;
+  }
+
+  .timetable-chunks .day-label {
+    font-size: 9px;
+  }
+
+  .timetable-chunks .day-date {
+    font-size: 6px;
+  }
+
+  .timetable-chunks .day-now-dot {
+    top: 6px;
+    right: 6px;
+    width: 3px;
+    height: 3px;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 13%, transparent);
+  }
+
+  .timetable-chunks .tt-slot-plus {
+    display: none;
+  }
+
+  .timetable-chunks .course-block {
+    padding: 4px 5px;
+    border-left-width: 2px;
+    border-radius: 5px;
+  }
+
+  .timetable-chunks .course-block-name {
+    font-size: 9.5px;
+    line-height: 1.2;
+    -webkit-line-clamp: 3;
+  }
+
+  .timetable-chunks .course-block-meta {
+    display: block;
+    margin-top: 2px;
+    overflow: visible;
+    color: var(--ink-2);
+    font-size: 7px;
+    line-height: 1.2;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .timetable-chunks .course-block-foot {
+    display: block;
+    overflow: hidden;
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 6.5px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .timetable-chunks .conflict-mark {
+    width: 9px;
+    height: 9px;
+    font-size: 6px;
+  }
+
+  .timetable-chunks .holiday-column-label {
+    font-size: 6px;
+    writing-mode: vertical-rl;
+  }
+}
+
+/* Agenda page: week events + single-day table moved off the week grid page. */
+.agenda-page {
+  padding-bottom: 10px;
+}
+
+.agenda-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 35px 2px 23px;
+  animation: fade-up 420ms both;
+}
+
+.agenda-hero h1 {
+  margin-top: 5px;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: clamp(28px, 3.3vw, 39px);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+}
+
+.agenda-sub {
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.agenda-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 286px;
+  gap: 22px;
+  align-items: start;
+}
+
+.agenda-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.agenda-board {
+  min-width: 0;
+}
+
+.agenda-events {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.agenda-events-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 17px;
+  border-bottom: 1px solid var(--line);
+}
+
+.agenda-events-head h2 {
+  margin-top: 3px;
+  font-family: var(--display);
+  font-size: 23px;
+  font-weight: 500;
+}
+
+.agenda-events-head .secondary-button {
+  min-height: 29px;
+  padding: 0 9px;
+  font-size: 8px;
+}
+
+.agenda-event-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.agenda-event-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 15px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  text-align: left;
+}
+
+.agenda-event-item:last-child {
+  border-bottom: 0;
+}
+
+.agenda-event-item:hover {
+  background: var(--surface-2);
+}
+
+.agenda-event-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.agenda-event-date {
+  display: flex;
+  width: 46px;
+  flex: 0 0 46px;
+  flex-direction: column;
+  gap: 0;
+  border-right: 1px solid var(--line);
+}
+
+.agenda-event-date strong {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 8px;
+}
+
+.agenda-event-date small {
+  color: var(--muted);
+  font-size: 7px;
+}
+
+.agenda-event-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.agenda-event-copy strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-event-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-event-time {
+  flex: 0 0 auto;
+  color: var(--coral);
+  font-family: var(--mono);
+  font-size: 7.5px;
+}
+
+.agenda-events-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 17px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.agenda-events-empty svg {
+  color: var(--coral);
+}
+
+@media (max-width: 1080px) {
+  .agenda-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agenda-hero {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .agenda-hero {
+    display: block;
+    padding: 24px 1px 16px;
+  }
+
+  .agenda-hero h1 {
+    font-size: 29px;
+  }
+
+  .agenda-hero .week-switcher {
+    margin-top: 14px;
+  }
+
+  .agenda-layout {
+    gap: 14px;
+  }
+
+  .agenda-main {
+    gap: 12px;
+  }
+
+  .agenda-events-head {
+    padding: 12px 13px;
+  }
+
+  .agenda-events-head h2 {
+    font-size: 20px;
+  }
+
+  .agenda-event-item {
+    padding: 9px 12px;
+  }
+
+  .agenda-page .today-rail {
+    margin-top: 0;
+  }
+}
+
 /* Mobile week overview: all seven days, full locations, no horizontal swipe. */
 .week-overview {
   display: none;

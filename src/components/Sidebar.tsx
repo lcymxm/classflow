@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  CalendarDays,
   Layers,
   LayoutGrid,
   Moon,
@@ -21,6 +22,7 @@ interface SidebarProps {
   totalWeeks: number;
   courseCount: number;
   sessionCount: number;
+  agendaCount: number;
   theme: Theme;
   onNavigate: (page: AppPage) => void;
   onToggleTheme: () => void;
@@ -50,6 +52,7 @@ export function Sidebar({
   totalWeeks,
   courseCount,
   sessionCount,
+  agendaCount,
   theme,
   onNavigate,
   onToggleTheme,
@@ -106,6 +109,16 @@ export function Sidebar({
           <LayoutGrid size={17} strokeWidth={1.8} />
           <span>周课表</span>
           <span className="nav-week">{week}</span>
+        </button>
+        <button
+          className={`nav-item ${page === "agenda" ? "is-active" : ""}`}
+          type="button"
+          onClick={() => onNavigate("agenda")}
+          aria-current={page === "agenda" ? "page" : undefined}
+        >
+          <CalendarDays size={17} strokeWidth={1.8} />
+          <span>日程与单日</span>
+          <span className="nav-count">{agendaCount}</span>
         </button>
         <button
           className={`nav-item ${page === "courses" ? "is-active" : ""}`}

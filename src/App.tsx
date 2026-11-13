@@ -4,7 +4,6 @@ import {
   CalendarDays,
   Image as ImageIcon,
   LayoutGrid,
-  List,
   Plus,
   Printer,
 } from "lucide-react";
@@ -64,8 +63,8 @@ import { CourseDetail } from "./components/CourseDetail";
 import { CourseEditor } from "./components/CourseEditor";
 import type { EditorSeed } from "./components/CourseEditor";
 import { CourseLibrary } from "./components/CourseLibrary";
+import { AgendaPage } from "./components/AgendaPage";
 import { ConfirmDialog } from "./components/ConfirmDialog";
-import { DayView } from "./components/DayView";
 import { DesktopPet } from "./components/DesktopPet";
 import { EventEditor } from "./components/EventEditor";
 import type { EventSeed } from "./components/EventEditor";
@@ -75,7 +74,6 @@ import { Timetable } from "./components/Timetable";
 import { TimetableManager } from "./components/TimetableManager";
 import { Toast } from "./components/Toast";
 import type { ToastState } from "./components/Toast";
-import { TodayRail } from "./components/TodayRail";
 import { Topbar } from "./components/Topbar";
 import { WallpaperModal } from "./components/WallpaperModal";
 import { WeekHero } from "./components/WeekHero";
@@ -194,15 +192,6 @@ export default function App() {
     () => getCalendarSummary(viewDates, prefs.autoHolidays),
     [viewDates, prefs.autoHolidays],
   );
-  const viewEventCounts = useMemo(() => {
-    const counts: Record<number, number> = {};
-    for (const day of viewDays) {
-      const date = viewDates[day - 1];
-      if (!date) continue;
-      counts[day] = events.filter((event) => event.date === dateKey(date)).length;
-    }
-    return counts;
-  }, [events, viewDates, viewDays]);
   const selectedDate = viewDates[selectedDay - 1] ?? viewDates[0];
   const selectedEvents = selectedDate
     ? events.filter((event) => event.date === dateKey(selectedDate))
@@ -333,14 +322,10 @@ export default function App() {
     );
   }, [currentWeek, todayNumber, viewDays]);
 
-  const changeView = (view: "week" | "day") => {
-    setPrefs((current) => ({ ...current, view }));
-    if (view === "day" && !viewDays.includes(selectedDay)) {
+  const navigate = (nextPage: AppPage) => {
+    if (nextPage === "agenda" && !viewDays.includes(selectedDay)) {
       setSelectedDay(viewDays.includes(todayNumber) ? todayNumber : viewDays[0] ?? 1);
     }
-  };
-
-  const navigate = (nextPage: AppPage) => {
     setPage(nextPage);
     setSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -716,7 +701,6 @@ export default function App() {
     return () => document.removeEventListener("keydown", handleKeydown);
   }, [sidebarOpen, page, semester.totalWeeks, currentWeek, todayNumber, viewDays, now]);
 
-  const isDayView = prefs.view === "day";
 
   return (
     <div className="app-shell">
@@ -731,6 +715,7 @@ export default function App() {
         totalWeeks={semester.totalWeeks}
         courseCount={courses.length}
         sessionCount={currentStats.sessionCount}
+        agendaCount={weekEvents.length}
         theme={prefs.theme}
         onNavigate={navigate}
         onToggleTheme={toggleTheme}
@@ -787,32 +772,16 @@ export default function App() {
                 onOpenWeekPicker={() => setWeekPickerOpen(true)}
               />
 
-              <div className="content-grid">
+              <div className="content-grid content-grid--solo">
                 <section
                   className="board"
-                  aria-label="课表"
+                  aria-label="周课表"
                   style={wallpaperStyle(timetable.wallpaper, prefs.theme)}
                 >
                   <div className="board-toolbar">
-                    <div className="view-switch" role="group" aria-label="切换视图">
-                      <button
-                        className={!isDayView ? "is-active" : ""}
-                        type="button"
-                        onClick={() => changeView("week")}
-                        aria-pressed={!isDayView}
-                      >
-                        <LayoutGrid size={15} />
-                        周视图
-                      </button>
-                      <button
-                        className={isDayView ? "is-active" : ""}
-                        type="button"
-                        onClick={() => changeView("day")}
-                        aria-pressed={isDayView}
-                      >
-                        <List size={15} />
-                        日视图
-                      </button>
+                    <div className="board-title">
+                      <LayoutGrid size={15} />
+                      <span>周全网格</span>
                     </div>
                     <div className="board-toolbar-right">
                       <span className="board-meta">
@@ -841,63 +810,55 @@ export default function App() {
                     </div>
                   </div>
 
-                  {isDayView ? (
-                    <DayView
-                      semester={viewSemester}
-                      week={week}
-                      currentWeek={currentWeek}
-                      dates={viewDates}
-                      days={viewDays}
-                      sessions={viewSessions}
-                      events={selectedEvents}
-                      dayStatuses={viewDayStatuses}
-                      selectedDay={selectedDay}
-                      now={now}
-                      onSelectDay={setSelectedDay}
-                      onSelectCourse={openCourseDetail}
-                      onAddAt={(day, start) => openEditor({ prefill: { day, start } })}
-                      onAddEvent={(date) => openEventEditor({ date })}
-                      onSelectEvent={(event) => openEventEditor({ event })}
-                    />
-                  ) : (
-                    <Timetable
-                      semester={viewSemester}
-                      week={week}
-                      currentWeek={currentWeek}
-                      dates={viewDates}
-                      days={viewDays}
-                      courses={courses}
-                      sessions={viewSessions}
-                      dayStatuses={viewDayStatuses}
-                      eventCounts={viewEventCounts}
-                      weekEvents={weekEvents}
-                      calendarSummary={calendarSummary}
-                      now={now}
-                      onSelectCourse={openCourseDetail}
-                      onSelectEvent={(event) => openEventEditor({ event })}
-                      onAddAt={(day, start) => openEditor({ prefill: { day, start } })}
-                      onAddCourse={() => openEditor()}
-                    />
-                  )}
+                  <Timetable
+                    semester={viewSemester}
+                    week={week}
+                    currentWeek={currentWeek}
+                    dates={viewDates}
+                    days={viewDays}
+                    courses={courses}
+                    sessions={viewSessions}
+                    dayStatuses={viewDayStatuses}
+                    calendarSummary={calendarSummary}
+                    now={now}
+                    onSelectCourse={openCourseDetail}
+                    onAddAt={(day, start) => openEditor({ prefill: { day, start } })}
+                    onAddCourse={() => openEditor()}
+                  />
                 </section>
-
-                <TodayRail
-                  now={now}
-                  currentWeek={currentWeek}
-                  totalWeeks={semester.totalWeeks}
-                  weekDates={currentDates}
-                  sessions={currentSessions}
-                  periods={currentPeriods}
-                  stats={currentStats}
-                  days={currentDays}
-                  holiday={currentDayStatuses[todayNumber] ?? null}
-                  events={todayEvents}
-                  onSelectCourse={openCourseDetail}
-                  onSelectEvent={(event) => openEventEditor({ event })}
-                  onAddEvent={() => openEventEditor({ date: dateKey(now) })}
-                />
               </div>
             </>
+          ) : page === "agenda" ? (
+            <AgendaPage
+              now={now}
+              week={week}
+              currentWeek={currentWeek}
+              totalWeeks={semester.totalWeeks}
+              semester={viewSemester}
+              dates={viewDates}
+              days={viewDays}
+              sessions={viewSessions}
+              selectedDay={selectedDay}
+              selectedEvents={selectedEvents}
+              weekEvents={weekEvents}
+              dayStatuses={viewDayStatuses}
+              currentDates={currentDates}
+              currentSessions={currentSessions}
+              currentPeriods={currentPeriods}
+              currentStats={currentStats}
+              currentDays={currentDays}
+              currentDayStatuses={currentDayStatuses}
+              todayNumber={todayNumber}
+              todayEvents={todayEvents}
+              onPrevWeek={() => goToWeek(week - 1)}
+              onNextWeek={() => goToWeek(week + 1)}
+              onToday={goToday}
+              onSelectDay={setSelectedDay}
+              onSelectCourse={openCourseDetail}
+              onAddAt={(day, start) => openEditor({ prefill: { day, start } })}
+              onAddEventAt={(date) => openEventEditor({ date: date || dateKey(now) })}
+              onSelectEvent={(event) => openEventEditor({ event })}
+            />
           ) : (
             <CourseLibrary
               courses={courses}

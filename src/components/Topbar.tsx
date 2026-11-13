@@ -55,8 +55,10 @@ export function Topbar({
           {timetableName}
         </button>
         <span className="breadcrumb-slash">/</span>
-        <span>{page === "timetable" ? "周课表" : "课程库"}</span>
-        {page === "timetable" ? (
+        <span>
+          {page === "timetable" ? "周课表" : page === "agenda" ? "日程与单日" : "课程库"}
+        </span>
+        {page !== "courses" ? (
           <button
             className="breadcrumb-week"
             type="button"
