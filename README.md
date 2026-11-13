@@ -7,7 +7,7 @@
   <p>
     <a href="https://lcymxm.github.io/classflow/"><strong>在线使用 →</strong></a>
     &nbsp;·&nbsp;
-    <a href="https://github.com/lcymxm/classflow/releases/download/v1.11.0/classflow-1.11.0.apk"><strong>下载 Android APK →</strong></a>
+    <a href="https://github.com/lcymxm/classflow/releases/download/v1.11.1/classflow-1.11.1.apk"><strong>下载 Android APK →</strong></a>
     &nbsp;·&nbsp;
     <a href="#本地运行">本地运行</a>
     &nbsp;·&nbsp;
@@ -62,7 +62,7 @@
 - **多套课表**：课表管理里新建、进入、重命名、复制、删除；每套课表独立。
 - **多套作息**：两套作息方案都可改名，可分别编辑并保存，应用后可继续逐节调整。
 - **默认周视图**：打开即周课表，也可手动切换日视图。
-- **周次跳转**：点日期打开周次面板，快速跳转或用「回到本周」返回；周课表页不再常驻显示第几周。
+- **周次跳转**：首页大标题显示第几周，下面附上日期范围；点周数/日期打开周次面板，快速跳转或用「回到本周」返回。
 - **预设模板**：空白 / 理工科 / 文科 / 医学 / 考研备考。
 - **课程管理**：课程名、老师、地点、备注、颜色；一门课支持多个上课时间段。
 - **周次**：每个时段可逐周勾选第 1–30 周中的任意周，也可一键全选、单周、双周。
@@ -168,11 +168,11 @@
 
 ## Android APK
 
-[**下载 Android 离线版 APK（v1.11.0）→**](https://github.com/lcymxm/classflow/releases/download/v1.11.0/classflow-1.11.0.apk)
+[**下载 Android 离线版 APK（v1.11.1）→**](https://github.com/lcymxm/classflow/releases/download/v1.11.1/classflow-1.11.1.apk)
 
 - 最低系统：Android 7.0（API 24）
 - 包名：`io.github.lcymxm.classflow`
-- 版本：`1.11.0` · release 签名；证书 SHA-256：`DDEB950B349935E3E47194434CED43CD8ECEC52465AE561B1EF17EB7664B0B6B`
+- 版本：`1.11.1` · release 签名；证书 SHA-256：`DDEB950B349935E3E47194434CED43CD8ECEC52465AE561B1EF17EB7664B0B6B`
 - 首次安装需要在系统设置中允许「安装未知应用」。
 - APK 已内置全部页面资源，打开时**不需要访问 GitHub Pages**；数据仍只保存在手机本机。
 - APK 内导出备份 / 日历会打开 Android 系统分享面板，可保存到「文件」或网盘；打印 / PDF 请使用网页版。
@@ -287,7 +287,7 @@ classflow/
 - Android 小组件只适用于 APK 版本，需要桌面启动器支持。小组件已通过构建检查；当前环境没有 Android 真机，实际桌面效果需要你安装后确认。
 - 同课合并现在同时看课程名称和老师：同名同老师才自动合并；同名不同老师会新建，避免把两个班混在一起。已有课程老师为空时，可先选已有课程带入老师。
 - 手机端周标题区域左右滑动切换周次。
-- 手机端周课表是一张紧凑的完整七天网格，课程块内显示课程、教室、老师和周次；不需要横向滑动。周课表页不再常驻显示第几周，日期范围就是导航入口。
+- 手机端周课表是一张紧凑的完整七天网格，课程块内显示课程、教室、老师和周次；不需要横向滑动。首页大标题显示「第几周」，下方再附日期范围。
 - 手机底部导航提供「课表 / 日程 / 课程 / 我的」四个入口。
 - 日程和单日课表统一在「日程与单日」页；周课表页只显示课程网格。
 - 课程冲突目前只会提示并并排展示，不会自动调整课程时间。

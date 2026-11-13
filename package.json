@@ -1,10 +1,10 @@
 {
   "name": "classflow",
   "private": true,
-  "version": "1.11.0",
+  "version": "1.11.1",
   "type": "module",
   "packageManager": "pnpm@11.28.5",
-  "description": "课序 · 本地优先的大学课表。年复一年的作息切换、紧凑七天网格、个人功能页、dsh-pet 鲸鱼娘互动桌宠、鲸海夜航壁纸与 Android 小组件。",
+  "description": "课序 · 本地优先的大学课表。首页显示周数+日期、紧凑七天网格、年年循环的作息、我的功能页、dsh-pet 鲸鱼娘互动桌宠与鲸海夜航壁纸。",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

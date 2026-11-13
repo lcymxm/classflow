@@ -8066,9 +8066,9 @@ html[data-theme="whale"] .week-pick.is-selected span {
   .hero-copy {
     display: flex;
     min-width: 0;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 2px 9px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 
   .hero-kicker,
@@ -8104,7 +8104,7 @@ html[data-theme="whale"] .week-pick.is-selected span {
   }
 
   .hero-subline {
-    margin: 0;
+    margin: 2px 0 0;
     gap: 5px;
   }
 
