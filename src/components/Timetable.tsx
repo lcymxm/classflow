@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import { CalendarDays, CalendarPlus, Plus, Sparkles } from "lucide-react";
 import type { Course, LaidOutSession, Session, Semester } from "../types";
 import { toneColor } from "../types";
-import { getPeriodNowProgress, groupSessionsByDay } from "../lib/schedule";
+import { formatWeeks, getPeriodNowProgress, groupSessionsByDay } from "../lib/schedule";
 import { getWeekdayNumber, WEEKDAYS } from "../lib/date";
 import type { CalendarDayInfo } from "../lib/holidays";
 
@@ -89,12 +89,6 @@ export function Timetable({
         </button>
       </div>
     );
-  }
-
-  const chunkSize = days.length > 5 ? Math.ceil(days.length / 2) : days.length;
-  const dayChunks: number[][] = [];
-  for (let index = 0; index < days.length; index += chunkSize) {
-    dayChunks.push(days.slice(index, index + chunkSize));
   }
 
   const renderGrid = (gridDays: number[], keyPrefix: string) => (
@@ -190,18 +184,18 @@ export function Timetable({
                 {holiday ? <span className="holiday-column-label">{status.name}</span> : null}
 
                 {(byDay[day] ?? []).map((session) => {
-                  const duration = session.end - session.start + 1;
                   const ongoing =
                     isToday &&
                     nowProgress !== null &&
                     nowProgress.period >= session.start &&
                     nowProgress.period <= session.end;
                   const conflict = session.columns > 1;
+                  const single = session.start === session.end;
                   return (
                     <button
                       className={`course-block ${ongoing ? "is-ongoing" : ""} ${
                         conflict ? "is-conflict" : ""
-                      }`}
+                      } ${single ? "is-single" : ""}`}
                       type="button"
                       style={courseBlockStyle(session)}
                       key={session.id}
@@ -220,12 +214,13 @@ export function Timetable({
                       <span className="course-block-meta">
                         {session.course.location || "地点待定"}
                       </span>
-                      {duration > 2 && session.course.teacher ? (
-                        <span className="course-block-foot">
-                          {session.course.teacher} · 第 {session.start}
-                          {session.end !== session.start ? `–${session.end}` : ""} 节
-                        </span>
+                      {session.course.teacher ? (
+                        <span className="course-block-teacher">@{session.course.teacher}</span>
                       ) : null}
+                      <span className="course-block-weeks">
+                        {formatWeeks(session.slot)} · 第 {session.start}
+                        {session.end !== session.start ? `–${session.end}` : ""} 节
+                      </span>
                     </button>
                   );
                 })}
@@ -278,13 +273,6 @@ export function Timetable({
         {renderGrid(days, "full-week")}
       </div>
 
-      <div className="timetable-chunks">
-        {dayChunks.map((chunk, index) => (
-          <div className="timetable-chunk" key={`chunk-${index}`}>
-            {renderGrid(chunk, `chunk-${index}`)}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

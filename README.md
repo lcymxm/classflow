@@ -7,7 +7,7 @@
   <p>
     <a href="https://lcymxm.github.io/classflow/"><strong>在线使用 →</strong></a>
     &nbsp;·&nbsp;
-    <a href="https://github.com/lcymxm/classflow/releases/download/v1.9.0/classflow-1.9.0.apk"><strong>下载 Android APK →</strong></a>
+    <a href="https://github.com/lcymxm/classflow/releases/download/v1.10.0/classflow-1.10.0.apk"><strong>下载 Android APK →</strong></a>
     &nbsp;·&nbsp;
     <a href="#本地运行">本地运行</a>
     &nbsp;·&nbsp;
@@ -37,8 +37,9 @@
 - **DeepSeek 鲸鱼娘主题**：深海蓝界面、鲸鱼气泡与光束背景、玻璃卡片；主题图标已换成 dsh-pet 鲸鱼娘头像，视觉参考了 [DSH Market](https://dsh-market.com/) 的深海动漫氛围。
 - **默认周视图**：新打开页面默认是周课表；想按天看再切到日视图。
 - **跳到任意周**：点大周数或顶部周次，弹出周次面板，可直接跳到第几周；不在本周时左下角有「回到本周」快捷按钮。
-- **完整网格周课表**：周页只保留节次 × 星期的网格课表，桌面端一张表看完整周；手机端自动拆成前后两段网格，七天都在，不用横向滑动。
-- **日程与单日表独立页**：日程列表、今日/下一节课、单日课表从周课表页移到「日程与单日」，周课表更干净。
+- **完整七天网格**：周页只保留节次 × 星期的网格课表；桌面端看完整大图，手机端用紧凑的七天网格，不用横向滑动。
+- **手机底部导航**：课表 / 日程 / 课程 / 我的，和单日页一起让手机操作更直接。
+- **日程与单日表独立页**：日程列表、今日/下一节课、单日课表从周课表页移到「日程与单日」，周课表只留网格。
 - **完整教室地点**：网格课程块和单日表都会显示完整教室地点，不再只给部分课程显示。
 - **节假日与调休**：内置 2026、2027 年国务院办公厅放假安排。法定节假日自动隐藏当天课程；调休上班的周末会自动显示并标注「班」。
 - **自定义周次**：每个时间段都可以逐周勾选；支持全选、单周、双周、清空，不再只能填一个范围。
@@ -146,8 +147,8 @@
 ![节假日与调休](docs/screenshot-holiday.png)
 
 <p align="center">
-  <img src="docs/screenshot-mobile.png" width="320" alt="手机端网格周课表" />
-  <img src="docs/screenshot-whale-mobile.png" width="320" alt="手机端 DeepSeek 鲸鱼娘网格周课表" />
+  <img src="docs/screenshot-mobile.png" width="320" alt="手机端完整七天网格" />
+  <img src="docs/screenshot-whale-mobile.png" width="320" alt="手机端 DeepSeek 鲸鱼娘完整七天网格" />
 </p>
 
 ## 在线使用
@@ -158,11 +159,11 @@
 
 ## Android APK
 
-[**下载 Android 离线版 APK（v1.9.0）→**](https://github.com/lcymxm/classflow/releases/download/v1.9.0/classflow-1.9.0.apk)
+[**下载 Android 离线版 APK（v1.10.0）→**](https://github.com/lcymxm/classflow/releases/download/v1.10.0/classflow-1.10.0.apk)
 
 - 最低系统：Android 7.0（API 24）
 - 包名：`io.github.lcymxm.classflow`
-- 版本：`1.9.0` · release 签名；证书 SHA-256：`DDEB950B349935E3E47194434CED43CD8ECEC52465AE561B1EF17EB7664B0B6B`
+- 版本：`1.10.0` · release 签名；证书 SHA-256：`DDEB950B349935E3E47194434CED43CD8ECEC52465AE561B1EF17EB7664B0B6B`
 - 首次安装需要在系统设置中允许「安装未知应用」。
 - APK 已内置全部页面资源，打开时**不需要访问 GitHub Pages**；数据仍只保存在手机本机。
 - APK 内导出备份 / 日历会打开 Android 系统分享面板，可保存到「文件」或网盘；打印 / PDF 请使用网页版。
@@ -277,7 +278,8 @@ classflow/
 - Android 小组件只适用于 APK 版本，需要桌面启动器支持。小组件已通过构建检查；当前环境没有 Android 真机，实际桌面效果需要你安装后确认。
 - 同课合并现在同时看课程名称和老师：同名同老师才自动合并；同名不同老师会新建，避免把两个班混在一起。已有课程老师为空时，可先选已有课程带入老师。
 - 手机端周标题区域左右滑动切换周次。
-- 手机端周课表拆成前后两段网格：周一至周四一段、周五至周日一段，仍然是一格一格的网格，不需要横向滑动。
+- 手机端周课表是一张紧凑的完整七天网格，课程块内显示课程、教室、老师和周次；不需要横向滑动。
+- 手机底部导航提供「课表 / 日程 / 课程 / 我的」四个入口。
 - 日程和单日课表统一在「日程与单日」页；周课表页只显示课程网格。
 - 课程冲突目前只会提示并并排展示，不会自动调整课程时间。
 - 这是个人课表工具，不包含教务系统登录或自动抓取课表功能。

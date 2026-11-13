@@ -64,6 +64,7 @@ import { CourseEditor } from "./components/CourseEditor";
 import type { EditorSeed } from "./components/CourseEditor";
 import { CourseLibrary } from "./components/CourseLibrary";
 import { AgendaPage } from "./components/AgendaPage";
+import { MobileTabBar } from "./components/MobileTabBar";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { DesktopPet } from "./components/DesktopPet";
 import { EventEditor } from "./components/EventEditor";
@@ -987,6 +988,12 @@ export default function App() {
           <span>第 {currentWeek} 周</span>
         </button>
       ) : null}
+
+      <MobileTabBar
+        page={page}
+        onNavigate={navigate}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
 
       {page === "timetable" && courses.length > 0 ? (
         <button
