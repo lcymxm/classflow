@@ -82,6 +82,27 @@ function deliveryMessage(delivery: ExportResult["delivery"], filename: string): 
   return `已导出 ${filename}`;
 }
 
+
+function isValidMonthDay(value: string): boolean {
+  if (!/^\d{2}-\d{2}$/.test(value)) return false;
+  const [month, day] = value.split("-").map(Number);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const date = new Date(2024, month - 1, day);
+  return date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function monthLength(month: number): number {
+  return new Date(2024, month, 0).getDate();
+}
+
+function splitMonthDay(value: string): { month: number; day: number } {
+  const [month, day] = value.split("-").map(Number);
+  return {
+    month: Number.isFinite(month) && month >= 1 && month <= 12 ? month : 1,
+    day: Number.isFinite(day) && day >= 1 ? Math.min(day, 31) : 1,
+  };
+}
+
 function usedMaxWeek(data: ScheduleData): number {
   const active = data.timetables.find((item) => item.id === data.activeTimetableId) ?? data.timetables[0];
   let max = 0;
@@ -121,7 +142,7 @@ export function SettingsModal({
     if (rules.length > 0) return rules.map((rule) => ({ ...rule }));
     const fallback = active.periodProfileId;
     return fallback
-      ? [{ id: `rule-${active.semester.startDate}`, from: active.semester.startDate, profileId: fallback }]
+      ? [{ id: `rule-${active.semester.startDate.slice(5)}`, from: active.semester.startDate.slice(5), profileId: fallback }]
       : [];
   });
   const [profilePeriods, setProfilePeriods] = useState<Record<string, Period[]>>(() =>
@@ -168,7 +189,7 @@ export function SettingsModal({
       ...current,
       {
         id: `rule-${Date.now()}-${current.length}`,
-        from: dateKey(new Date()),
+        from: dateKey(new Date()).slice(5),
         profileId: profile.id,
       },
     ]);
@@ -256,8 +277,8 @@ export function SettingsModal({
     }
     const ruleDates = new Set<string>();
     for (const rule of periodRules) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(rule.from)) {
-        setError("请为每条作息规则选择一个有效日期。");
+      if (!/^\d{2}-\d{2}$/.test(rule.from) || !isValidMonthDay(rule.from)) {
+        setError("请为每条作息规则选择一个有效的月和日。");
         return;
       }
       if (ruleDates.has(rule.from)) {
@@ -404,7 +425,7 @@ export function SettingsModal({
                 <ArrowUpRight size={15} />
                 GitHub
               </a>
-              <span>课序 v1.10.0</span>
+              <span>课序 v1.11.0</span>
             </div>
           </nav>
 
@@ -649,7 +670,7 @@ export function SettingsModal({
                     <div>
                       <span className="field-label">从某天起执行哪套作息</span>
                       <small className="field-hint">
-                        查看某一周时，按该周内日期选择方案；同一周内切换会整周采用新方案。
+                        不需要选择年份；每年到了这个月日就自动切换。查看某一周时按该周内日期选择方案。
                       </small>
                     </div>
                     <button className="secondary-button period-rule-add" type="button" onClick={addPeriodRule}>
@@ -660,14 +681,46 @@ export function SettingsModal({
                   <div className="period-rule-list">
                     {periodRules.map((rule) => (
                       <div className="period-rule-row" key={rule.id}>
-                        <span className="period-rule-prefix">从</span>
-                        <input
-                          className="field-input"
-                          type="date"
-                          value={rule.from}
-                          onChange={(event) => updatePeriodRule(rule.id, { from: event.target.value })}
-                          aria-label="作息开始日期"
-                        />
+                        <span className="period-rule-prefix">每年</span>
+                        <select
+                          className="field-input period-rule-month"
+                          value={splitMonthDay(rule.from).month}
+                          onChange={(event) => {
+                            const month = Number(event.target.value);
+                            const day = Math.min(splitMonthDay(rule.from).day, monthLength(month));
+                            updatePeriodRule(rule.id, {
+                              from: `${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+                            });
+                          }}
+                          aria-label="作息开始月份"
+                        >
+                          {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+                            <option key={month} value={month}>
+                              {month} 月
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          className="field-input period-rule-day"
+                          value={splitMonthDay(rule.from).day}
+                          onChange={(event) =>
+                            updatePeriodRule(rule.id, {
+                              from: `${String(splitMonthDay(rule.from).month).padStart(2, "0")}-${String(
+                                Number(event.target.value),
+                              ).padStart(2, "0")}`,
+                            })
+                          }
+                          aria-label="作息开始日"
+                        >
+                          {Array.from(
+                            { length: monthLength(splitMonthDay(rule.from).month) },
+                            (_, index) => index + 1,
+                          ).map((day) => (
+                            <option key={day} value={day}>
+                              {day} 日
+                            </option>
+                          ))}
+                        </select>
                         <span className="period-rule-prefix">起使用</span>
                         <select
                           className="field-input period-rule-select"

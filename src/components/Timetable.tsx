@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { CalendarDays, CalendarPlus, Plus, Sparkles } from "lucide-react";
 import type { Course, LaidOutSession, Session, Semester } from "../types";
@@ -21,6 +21,8 @@ interface TimetableProps {
   calendarSummary: { holidays: string[]; workdays: string[] };
   now: Date;
   onSelectCourse: (course: Course) => void;
+  onPrevWeek: () => void;
+  onNextWeek: () => void;
   onAddAt: (day: number, start: number) => void;
   onAddCourse: () => void;
 }
@@ -51,10 +53,15 @@ export function Timetable({
   calendarSummary,
   now,
   onSelectCourse,
+  onPrevWeek,
+  onNextWeek,
   onAddAt,
   onAddCourse,
 }: TimetableProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [swiping, setSwiping] = useState(false);
+  const swipeStart = useRef<{ pointerId: number; x: number; y: number } | null>(null);
+  const suppressClick = useRef(false);
   const byDay = useMemo(() => groupSessionsByDay(sessions), [sessions]);
   const todayNumber = getWeekdayNumber(now);
   const showNow = week === currentWeek && days.includes(todayNumber);
@@ -73,6 +80,43 @@ export function Timetable({
     const target = Math.max(0, 64 + dayWidth * dayIndex - scroller.clientWidth / 2 + dayWidth / 2);
     scroller.scrollTo({ left: target, behavior: "smooth" });
   }, [week, currentWeek, days, todayNumber]);
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" || event.button !== 0) return;
+    swipeStart.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = swipeStart.current;
+    if (!start || start.pointerId !== event.pointerId) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.2) setSwiping(true);
+  };
+
+  const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    setSwiping(false);
+    if (!start || start.pointerId !== event.pointerId) return;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    suppressClick.current = true;
+    if (dx < 0 && week < semester.totalWeeks) onNextWeek();
+    if (dx > 0 && week > 1) onPrevWeek();
+    window.setTimeout(() => {
+      suppressClick.current = false;
+    }, 400);
+  };
+
+  const onClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!suppressClick.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressClick.current = false;
+  };
 
   if (courses.length === 0) {
     return (
@@ -239,7 +283,17 @@ export function Timetable({
   );
 
   return (
-    <div className="timetable-zone">
+    <div
+      className={`timetable-zone ${swiping ? "is-swiping" : ""}`}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={() => {
+        swipeStart.current = null;
+        setSwiping(false);
+      }}
+      onClickCapture={onClickCapture}
+    >
       {calendarSummary.holidays.length > 0 || calendarSummary.workdays.length > 0 ? (
         <div className="calendar-strip">
           <CalendarDays size={15} />

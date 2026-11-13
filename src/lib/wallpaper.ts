@@ -7,6 +7,7 @@ export interface WallpaperPresetDefinition {
   note: string;
   background: string;
   size?: string;
+  image?: string;
 }
 
 export const WALLPAPER_PRESETS: WallpaperPresetDefinition[] = [
@@ -40,6 +41,14 @@ export const WALLPAPER_PRESETS: WallpaperPresetDefinition[] = [
     background:
       "radial-gradient(circle at 88% 10%, rgba(221, 103, 73, 0.23), transparent 24rem), linear-gradient(145deg, #1c302a, #111b17)",
   },
+  {
+    id: "whale-night",
+    name: "鲸海夜航",
+    note: "深海光束与鲸影，适合鲸鱼娘主题",
+    image: "wallpapers/whale-night.svg",
+    background:
+      "radial-gradient(circle at 70% 20%, #123d62, transparent 55%), linear-gradient(145deg, #061426, #04101d)",
+  },
 ];
 
 function preset(id: WallpaperPreset): WallpaperPresetDefinition {
@@ -68,6 +77,15 @@ export function wallpaperStyle(wallpaper: Wallpaper, theme: Theme): CSSPropertie
   }
 
   const def = preset(wallpaper.preset === "custom" ? "paper" : wallpaper.preset);
+  if (def.image) {
+    return {
+      "--wallpaper-image": `url("${import.meta.env.BASE_URL}${def.image}")`,
+      "--wallpaper-size": "cover",
+      "--wallpaper-repeat": "no-repeat",
+      "--wallpaper-overlay": overlay(theme, wallpaper.dim, true),
+    } as CSSProperties;
+  }
+
   return {
     "--wallpaper-image": def.background,
     "--wallpaper-size": def.size ?? "auto",

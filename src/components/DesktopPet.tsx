@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 const PET_IMAGE = `${import.meta.env.BASE_URL}pets/whale-girl-refined/idle.gif`;
+const WAVE_IMAGE = `${import.meta.env.BASE_URL}pets/whale-girl-refined/waving.webp`;
+const JUMP_IMAGE = `${import.meta.env.BASE_URL}pets/whale-girl-refined/jumping.webp`;
 const POSITION_KEY = "kexu:pet-position:v1";
 const PET_WIDTH = 96;
 const PET_HEIGHT = 106;
@@ -53,6 +55,7 @@ export function DesktopPet() {
   const [messageIndex, setMessageIndex] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [animation, setAnimation] = useState<"idle" | "waving" | "jumping">("idle");
   const elementRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     pointerId: number;
@@ -64,6 +67,16 @@ export function DesktopPet() {
     moved: boolean;
   } | null>(null);
   const bubbleTimer = useRef<number | null>(null);
+  const animationTimer = useRef<number | null>(null);
+
+  const playAnimation = (next: "waving" | "jumping") => {
+    setAnimation(next);
+    if (animationTimer.current) window.clearTimeout(animationTimer.current);
+    animationTimer.current = window.setTimeout(
+      () => setAnimation("idle"),
+      next === "waving" ? 1900 : 2300,
+    );
+  };
 
   const showBubble = (nextMessage = false) => {
     if (nextMessage) setMessageIndex((index) => (index + 1) % MESSAGES.length);
@@ -79,6 +92,7 @@ export function DesktopPet() {
     return () => {
       window.clearTimeout(timer);
       if (bubbleTimer.current) window.clearTimeout(bubbleTimer.current);
+      if (animationTimer.current) window.clearTimeout(animationTimer.current);
       window.removeEventListener("resize", onResize);
     };
   }, []);
@@ -136,6 +150,7 @@ export function DesktopPet() {
       });
       showBubble();
     } else {
+      playAnimation("waving");
       showBubble(true);
     }
   };
@@ -151,7 +166,7 @@ export function DesktopPet() {
       style={style}
       role="button"
       tabIndex={0}
-      aria-label="DeepSeek 鲸鱼娘桌宠，可以拖动；点一下换一句话"
+      aria-label="DeepSeek 鲸鱼娘桌宠，可以拖动；点一下挥手，双击跳跃"
       title="拖一拖，或者点我"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -159,9 +174,14 @@ export function DesktopPet() {
       onPointerCancel={onPointerUp}
       onPointerEnter={() => showBubble()}
       onFocus={() => showBubble()}
+      onDoubleClick={() => {
+        playAnimation("jumping");
+        showBubble(true);
+      }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
+          playAnimation("waving");
           showBubble(true);
         }
       }}
@@ -171,7 +191,13 @@ export function DesktopPet() {
           {MESSAGES[messageIndex]}
         </div>
       ) : null}
-      <img className="desktop-pet-image" src={PET_IMAGE} alt="" draggable={false} />
+      <img
+        key={animation}
+        className="desktop-pet-image"
+        src={animation === "waving" ? WAVE_IMAGE : animation === "jumping" ? JUMP_IMAGE : PET_IMAGE}
+        alt=""
+        draggable={false}
+      />
       <span className="desktop-pet-shadow" aria-hidden="true" />
       <button
         className="desktop-pet-close"

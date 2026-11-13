@@ -65,6 +65,7 @@ import type { EditorSeed } from "./components/CourseEditor";
 import { CourseLibrary } from "./components/CourseLibrary";
 import { AgendaPage } from "./components/AgendaPage";
 import { MobileTabBar } from "./components/MobileTabBar";
+import { ProfilePage } from "./components/ProfilePage";
 import { ConfirmDialog } from "./components/ConfirmDialog";
 import { DesktopPet } from "./components/DesktopPet";
 import { EventEditor } from "./components/EventEditor";
@@ -494,7 +495,7 @@ export default function App() {
     };
     created.periodProfileId = profile.id;
     created.periodRules = [
-      { id: `rule-${created.semester.startDate}`, from: created.semester.startDate, profileId: profile.id },
+      { id: `rule-${created.semester.startDate.slice(5)}`, from: created.semester.startDate.slice(5), profileId: profile.id },
     ];
     created.courses = createTemplateCourses(
       (input.templateId as TimetableTemplateId | undefined) ?? "blank",
@@ -711,7 +712,6 @@ export default function App() {
         timetableName={timetable.name}
         timetableCount={data.timetables.length}
         semesterName={semester.name}
-        week={week}
         currentWeek={currentWeek}
         totalWeeks={semester.totalWeeks}
         courseCount={courses.length}
@@ -823,6 +823,8 @@ export default function App() {
                     calendarSummary={calendarSummary}
                     now={now}
                     onSelectCourse={openCourseDetail}
+                    onPrevWeek={() => goToWeek(week - 1)}
+                    onNextWeek={() => goToWeek(week + 1)}
                     onAddAt={(day, start) => openEditor({ prefill: { day, start } })}
                     onAddCourse={() => openEditor()}
                   />
@@ -859,6 +861,28 @@ export default function App() {
               onAddAt={(day, start) => openEditor({ prefill: { day, start } })}
               onAddEventAt={(date) => openEventEditor({ date: date || dateKey(now) })}
               onSelectEvent={(event) => openEventEditor({ event })}
+            />
+          ) : page === "profile" ? (
+            <ProfilePage
+              data={data}
+              prefs={prefs}
+              timetable={timetable}
+              semester={semester}
+              week={week}
+              currentWeek={currentWeek}
+              sessionCount={viewStats.sessionCount}
+              eventCount={weekEvents.length}
+              storageOk={storageOk}
+              native={nativeApp}
+              onOpenSettings={() => setSettingsOpen(true)}
+              onManageTimetables={() => setTimetablesOpen(true)}
+              onSwitchTimetable={switchTimetable}
+              onOpenWallpaper={() => setWallpaperOpen(true)}
+              onChangeTheme={setTheme}
+              onExportJson={exportJson}
+              onExportIcs={exportIcs}
+              onImportFile={importFile}
+              onPrint={printTimetable}
             />
           ) : (
             <CourseLibrary
@@ -985,15 +1009,10 @@ export default function App() {
         <button className="week-back-fab" type="button" onClick={goToday}>
           <CalendarDays size={15} />
           回到本周
-          <span>第 {currentWeek} 周</span>
         </button>
       ) : null}
 
-      <MobileTabBar
-        page={page}
-        onNavigate={navigate}
-        onOpenSettings={() => setSettingsOpen(true)}
-      />
+      <MobileTabBar page={page} onNavigate={navigate} />
 
       {page === "timetable" && courses.length > 0 ? (
         <button

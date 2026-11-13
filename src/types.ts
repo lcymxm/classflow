@@ -63,12 +63,12 @@ export interface PeriodProfile {
 
 export interface PeriodRule {
   id: string;
-  /** Date key (YYYY-MM-DD) from which this profile applies. */
+  /** Annual month-day (MM-DD) from which this profile applies. */
   from: string;
   profileId: string;
 }
 
-export type WallpaperPreset = "paper" | "sage" | "dawn" | "dusk";
+export type WallpaperPreset = "paper" | "sage" | "dawn" | "dusk" | "whale-night";
 
 export interface Wallpaper {
   preset: WallpaperPreset | "custom";
@@ -136,7 +136,7 @@ export interface LaidOutSession extends Session {
 
 export type Theme = "light" | "dark" | "whale";
 export type ViewMode = "week" | "day";
-export type AppPage = "timetable" | "agenda" | "courses";
+export type AppPage = "timetable" | "agenda" | "courses" | "profile";
 
 export interface Preferences {
   theme: Theme;

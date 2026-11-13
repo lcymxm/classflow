@@ -233,7 +233,7 @@ export function createBlankTimetable(
     semester,
     periodProfileId: profile.id,
     periodRules: [
-      { id: uid("period-rule"), from: semester.startDate, profileId: profile.id },
+      { id: uid("period-rule"), from: semester.startDate.slice(5), profileId: profile.id },
     ],
     courses: [],
     events: [],
@@ -417,7 +417,7 @@ export function createDemoSchedule(now = new Date()): ScheduleData {
       periods: period.map((item) => ({ ...item })),
     },
     periodProfileId: profile.id,
-    periodRules: [{ id: "demo-rule", from: dateKey(start), profileId: profile.id }],
+    periodRules: [{ id: "demo-rule", from: dateKey(start).slice(5), profileId: profile.id }],
     courses,
     events: [],
     wallpaper: createDefaultWallpaper(),

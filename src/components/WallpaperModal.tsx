@@ -107,10 +107,16 @@ export function WallpaperModal({
                 <span
                   className="wallpaper-swatch"
                   style={
-                    {
-                      background: preset.background,
-                      backgroundSize: preset.size ?? "auto",
-                    } as CSSProperties
+                    preset.image
+                      ? {
+                          backgroundImage: `url("${import.meta.env.BASE_URL}${preset.image}")`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }
+                      : {
+                          background: preset.background,
+                          backgroundSize: preset.size ?? "auto",
+                        } as CSSProperties
                   }
                 />
                 <span>

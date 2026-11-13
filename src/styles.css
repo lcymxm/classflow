@@ -1290,6 +1290,12 @@ html[data-theme="whale"] .view-switch button.is-active {
 
 .timetable-zone {
   min-width: 0;
+  touch-action: pan-y;
+}
+
+.timetable-zone.is-swiping {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .week-empty {
@@ -5385,8 +5391,8 @@ input[type="date"].field-input {
   bottom: 26px;
   z-index: 18;
   display: flex;
-  width: 96px;
-  height: 112px;
+  width: 104px;
+  height: 120px;
   align-items: flex-end;
   justify-content: center;
   cursor: grab;
@@ -5405,11 +5411,24 @@ input[type="date"].field-input {
   cursor: grabbing;
 }
 
+.desktop-pet::before {
+  position: absolute;
+  right: 8px;
+  bottom: 15px;
+  left: 8px;
+  height: 66%;
+  content: "";
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(103, 216, 255, 0.16), transparent 68%);
+  filter: blur(9px);
+  pointer-events: none;
+}
+
 .desktop-pet-image {
   position: relative;
   z-index: 1;
   display: block;
-  width: 96px;
+  width: 104px;
   height: auto;
   pointer-events: none;
   filter: drop-shadow(0 10px 12px rgba(0, 6, 16, 0.3));
@@ -5684,9 +5703,14 @@ html[data-theme="whale"] .whale-note strong {
   font-size: 9px;
 }
 
-.period-rule-row input[type="date"] {
-  width: 132px;
-  flex: 0 0 132px;
+.period-rule-month {
+  width: 58px;
+  flex: 0 0 58px;
+}
+
+.period-rule-day {
+  width: 54px;
+  flex: 0 0 54px;
 }
 
 .period-rule-select {
@@ -8136,5 +8160,427 @@ html[data-theme="whale"] .week-pick.is-selected span {
 
   .course-block-weeks {
     font-size: 4.8px;
+  }
+}
+
+/* Profile / "我的" page */
+.profile-page {
+  padding-bottom: 18px;
+}
+
+.profile-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 36px 2px 24px;
+  animation: fade-up 420ms both;
+}
+
+.profile-hero h1 {
+  margin-top: 5px;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: clamp(30px, 3.6vw, 44px);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.08;
+}
+
+.profile-hero-sub {
+  max-width: 560px;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.profile-version {
+  margin-top: 8px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 7.5px;
+}
+
+.profile-hero > .whale-mascot {
+  width: 118px;
+  height: 118px;
+  margin-right: 26px;
+  filter: drop-shadow(0 12px 25px rgba(22, 82, 145, 0.25));
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.profile-card {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-card-head h2 {
+  margin-top: 3px;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.profile-current {
+  grid-column: 1 / -1;
+}
+
+.profile-current-sub {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+
+.profile-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.profile-stats strong {
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.profile-stats span {
+  color: var(--muted);
+  font-size: 7.5px;
+}
+
+.profile-progress {
+  height: 2px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--line);
+}
+
+.profile-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--coral);
+}
+
+.profile-theme-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 12px;
+}
+
+.profile-theme-option {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  text-align: left;
+}
+
+.profile-theme-option.is-active {
+  border-color: color-mix(in srgb, var(--coral) 40%, var(--line));
+  background: color-mix(in srgb, var(--coral) 6%, var(--surface));
+}
+
+.profile-theme-option > span:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.profile-theme-option strong {
+  color: var(--ink);
+  font-size: 9px;
+}
+
+.profile-theme-option small {
+  color: var(--muted);
+  font-size: 7.5px;
+}
+
+.profile-theme-option > svg {
+  color: var(--coral);
+  flex: 0 0 auto;
+}
+
+.profile-theme-swatch {
+  display: grid;
+  width: 35px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.profile-theme-swatch.is-light {
+  background: linear-gradient(135deg, #f4f1e8, #fffdf8 60%, #dd6749);
+}
+
+.profile-theme-swatch.is-dark {
+  background: linear-gradient(135deg, #101613, #17231e 60%, #e9e3d5);
+}
+
+.profile-theme-swatch.is-whale {
+  background: radial-gradient(circle at 25% 15%, #246eab, transparent 65%), #071426;
+}
+
+.profile-theme-swatch.is-whale .whale-mascot {
+  width: 31px;
+  height: 31px;
+}
+
+.profile-timetable-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 11px;
+}
+
+.profile-timetable-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  text-align: left;
+}
+
+.profile-timetable-item:hover {
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+
+.profile-timetable-item.is-active {
+  border-color: color-mix(in srgb, var(--coral) 25%, var(--line));
+  background: color-mix(in srgb, var(--coral) 5%, var(--surface));
+}
+
+.profile-timetable-item > span:first-child {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.profile-timetable-item strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-timetable-item small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-timetable-item > svg {
+  flex: 0 0 auto;
+  color: var(--faint);
+}
+
+.profile-active-badge {
+  flex: 0 0 auto;
+  color: var(--coral);
+  font-size: 7px;
+}
+
+.profile-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 12px;
+}
+
+.profile-tool-grid > button,
+.profile-tool-grid > a {
+  display: flex;
+  min-height: 61px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 8px;
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 8px;
+  text-align: left;
+}
+
+.profile-tool-grid > button:hover,
+.profile-tool-grid > a:hover {
+  border-color: var(--line-strong);
+  background: var(--surface);
+}
+
+.profile-tool-grid > button svg,
+.profile-tool-grid > a svg {
+  color: var(--coral);
+}
+
+.profile-tool-grid > a {
+  position: relative;
+}
+
+.profile-tool-grid > a > svg:last-child {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  color: var(--faint);
+}
+
+.profile-tool-grid > button:disabled {
+  opacity: 0.55;
+}
+
+.profile-about {
+  grid-column: 1 / -1;
+}
+
+.profile-about h2 {
+  margin-top: 3px;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 23px;
+  font-weight: 500;
+}
+
+.profile-about p {
+  max-width: 760px;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 8.5px;
+  line-height: 1.65;
+}
+
+.profile-about-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.profile-about-divider {
+  color: var(--faint);
+}
+
+.profile-widget-note {
+  padding-top: 9px;
+  border-top: 1px dashed var(--line);
+}
+
+@media (max-width: 1080px) {
+  .profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-current,
+  .profile-about {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .profile-hero {
+    padding: 24px 1px 16px;
+  }
+
+  .profile-hero h1 {
+    font-size: 30px;
+  }
+
+  .profile-hero > .whale-mascot {
+    width: 82px;
+    height: 82px;
+    margin-right: 0;
+  }
+
+  .profile-grid {
+    gap: 10px;
+  }
+
+  .profile-card {
+    padding: 13px;
+  }
+
+  .profile-current {
+    padding: 15px;
+  }
+
+  .profile-card-head h2 {
+    font-size: 21px;
+  }
+
+  .profile-stats strong {
+    font-size: 21px;
+  }
+
+  .profile-tool-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .profile-tool-grid > button,
+  .profile-tool-grid > a {
+    min-height: 58px;
+    padding: 7px;
+    font-size: 7.5px;
+  }
+
+  .profile-hero-sub {
+    max-width: 270px;
+    font-size: 9px;
   }
 }

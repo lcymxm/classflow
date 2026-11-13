@@ -6,6 +6,7 @@ import {
   Moon,
   Settings2,
   Sun,
+  UserRound,
   Waves,
 } from "lucide-react";
 import type { AppPage, Theme } from "../types";
@@ -17,7 +18,6 @@ interface SidebarProps {
   timetableName: string;
   timetableCount: number;
   semesterName: string;
-  week: number;
   currentWeek: number;
   totalWeeks: number;
   courseCount: number;
@@ -47,7 +47,6 @@ export function Sidebar({
   timetableName,
   timetableCount,
   semesterName,
-  week,
   currentWeek,
   totalWeeks,
   courseCount,
@@ -93,7 +92,7 @@ export function Sidebar({
           <span style={{ width: `${progress}%` }} />
         </div>
         <div className="term-meta">
-          <span>第 {currentWeek} 周</span>
+          <span>学期进度</span>
           <span>共 {totalWeeks} 周</span>
         </div>
       </section>
@@ -108,7 +107,6 @@ export function Sidebar({
         >
           <LayoutGrid size={17} strokeWidth={1.8} />
           <span>周课表</span>
-          <span className="nav-week">{week}</span>
         </button>
         <button
           className={`nav-item ${page === "agenda" ? "is-active" : ""}`}
@@ -119,6 +117,15 @@ export function Sidebar({
           <CalendarDays size={17} strokeWidth={1.8} />
           <span>日程与单日</span>
           <span className="nav-count">{agendaCount}</span>
+        </button>
+        <button
+          className={`nav-item ${page === "profile" ? "is-active" : ""}`}
+          type="button"
+          onClick={() => onNavigate("profile")}
+          aria-current={page === "profile" ? "page" : undefined}
+        >
+          <UserRound size={17} strokeWidth={1.8} />
+          <span>我的</span>
         </button>
         <button
           className={`nav-item ${page === "courses" ? "is-active" : ""}`}

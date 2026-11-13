@@ -92,7 +92,7 @@ export function WeekHero({
       <div className="hero-copy">
         <p className="hero-kicker">
           <span className="kicker-line" />
-          WEEK {String(week).padStart(2, "0")} / {String(totalWeeks).padStart(2, "0")}
+          WEEKLY VIEW
         </p>
         <button
           className="hero-week-trigger"
@@ -101,15 +101,11 @@ export function WeekHero({
           aria-label={`当前第 ${week} 周，点击选择周次`}
           title="点击选择周次"
         >
-          <h1 className="hero-title">
-            <span>第</span>
-            <strong>{week}</strong>
-            <span>周</span>
-          </h1>
+          <h1 className="hero-date-title">{formatWeekRange(dates)}</h1>
           <ChevronDown size={18} />
         </button>
         <div className="hero-subline">
-          <span className="hero-range">{formatWeekRange(dates)}</span>
+          <span className="hero-range">点击日期选择周次</span>
           {statusLabel ? <span className="hero-status">{statusLabel}</span> : null}
           {isCurrent ? (
             <span className="hero-current">

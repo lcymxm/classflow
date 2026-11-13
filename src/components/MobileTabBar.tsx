@@ -1,19 +1,19 @@
-import { BookOpen, CalendarDays, LayoutGrid, Settings2 } from "lucide-react";
+import { BookOpen, CalendarDays, LayoutGrid, UserRound } from "lucide-react";
 import type { AppPage } from "../types";
 
 interface MobileTabBarProps {
   page: AppPage;
   onNavigate: (page: AppPage) => void;
-  onOpenSettings: () => void;
 }
 
 const TABS = [
   { page: "timetable" as const, label: "课表", icon: LayoutGrid },
   { page: "agenda" as const, label: "日程", icon: CalendarDays },
   { page: "courses" as const, label: "课程", icon: BookOpen },
+  { page: "profile" as const, label: "我的", icon: UserRound },
 ];
 
-export function MobileTabBar({ page, onNavigate, onOpenSettings }: MobileTabBarProps) {
+export function MobileTabBar({ page, onNavigate }: MobileTabBarProps) {
   return (
     <nav className="mobile-tabbar" aria-label="手机底部导航">
       {TABS.map((tab) => {
@@ -32,10 +32,6 @@ export function MobileTabBar({ page, onNavigate, onOpenSettings }: MobileTabBarP
           </button>
         );
       })}
-      <button type="button" onClick={onOpenSettings} aria-label="打开设置">
-        <Settings2 size={18} strokeWidth={1.8} />
-        <span>我的</span>
-      </button>
     </nav>
   );
 }

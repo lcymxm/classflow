@@ -5,7 +5,8 @@ Files bundled in this directory:
   - idle.gif
   - avatar.png
   - face.png
-  - idle-frame.png
+  - waving.webp
+  - jumping.webp
 
 Source:
   https://github.com/zhu1090093659/dsh-pet

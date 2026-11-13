@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000">
+  <defs>
+    <linearGradient id="ocean" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#061426"/>
+      <stop offset="0.55" stop-color="#0a2b48"/>
+      <stop offset="1" stop-color="#04101d"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0" r="0.75">
+      <stop offset="0" stop-color="#4f9fe8" stop-opacity="0.36"/>
+      <stop offset="0.55" stop-color="#1f5f9e" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#061426" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ray" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9ee6ff" stop-opacity="0.15"/>
+      <stop offset="1" stop-color="#4b9bd5" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="whale" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d4067"/>
+      <stop offset="1" stop-color="#06192b"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#ocean)"/>
+  <rect width="1600" height="1000" fill="url(#glow)"/>
+  <g opacity="0.5" filter="url(#soft)">
+    <path d="M520 -80 L760 700 L600 700 L280 -80Z" fill="url(#ray)"/>
+    <path d="M850 -80 L1040 760 L940 760 L690 -80Z" fill="url(#ray)" opacity="0.65"/>
+    <path d="M1100 -80 L1250 640 L1180 640 L1000 -80Z" fill="url(#ray)" opacity="0.45"/>
+  </g>
+  <g fill="none" stroke="#8ddcff" stroke-opacity="0.16">
+    <circle cx="1230" cy="210" r="6"/>
+    <circle cx="1340" cy="300" r="3"/>
+    <circle cx="1140" cy="390" r="4"/>
+    <circle cx="1450" cy="160" r="2.5"/>
+    <circle cx="330" cy="260" r="3"/>
+    <circle cx="220" cy="520" r="5"/>
+    <circle cx="430" cy="720" r="3"/>
+  </g>
+  <g fill="#8ddcff" opacity="0.3">
+    <circle cx="1230" cy="210" r="2"/>
+    <circle cx="1340" cy="300" r="1.2"/>
+    <circle cx="1140" cy="390" r="1.5"/>
+    <circle cx="1450" cy="160" r="1"/>
+    <circle cx="330" cy="260" r="1.2"/>
+    <circle cx="220" cy="520" r="2"/>
+    <circle cx="430" cy="720" r="1.4"/>
+  </g>
+  <g transform="translate(980 560) rotate(-9)" opacity="0.82">
+    <path d="M120 250c-80-8-156-46-206-106 66 17 130 16 194-2-50-44-78-101-83-168 50 60 113 95 190 104 52 6 105-5 157-30-27 58-30 117-8 177 24-23 55-39 93-49-24 39-36 81-35 126-37 14-69 39-96 73-28-52-64-88-110-108-24 48-53 85-96 109Z" fill="url(#whale)"/>
+    <path d="M-58 56c34-8 64-24 90-49" fill="none" stroke="#4c9fd3" stroke-opacity="0.25" stroke-width="3"/>
+  </g>
+  <g opacity="0.28" fill="#9be6ff">
+    <circle cx="720" cy="120" r="1.2"/>
+    <circle cx="800" cy="180" r="0.8"/>
+    <circle cx="680" cy="300" r="1.4"/>
+    <circle cx="900" cy="250" r="0.7"/>
+    <circle cx="540" cy="430" r="1.1"/>
+    <circle cx="990" cy="700" r="1"/>
+  </g>
+</svg>

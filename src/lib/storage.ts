@@ -43,7 +43,7 @@ const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const PATTERNS: WeekPattern[] = ["all", "odd", "even"];
 const TONE_IDS = new Set<ToneId>(COURSE_TONES.map((tone) => tone.id));
-const PRESETS = new Set<WallpaperPreset>(["paper", "sage", "dawn", "dusk"]);
+const PRESETS = new Set<WallpaperPreset>(["paper", "sage", "dawn", "dusk", "whale-night"]);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
